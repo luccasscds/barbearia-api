@@ -3,17 +3,11 @@ import { clientController } from './controllers/clientController/client.controll
 
 const routes = express.Router();
 
-// get
 routes.get("/", async (_, res) => res.send('Bem vindo :)') );
+
 routes.get("/client/:id", clientController.get);
-
-// insert
-routes.post("/new/client", clientController.create);
-
-// update
-routes.put("/update/client", clientController.update);
-
-// delete
-routes.delete("/delete/client/:id", clientController.delete);
+routes.post("/client", clientController.create);
+routes.put("/client", clientController.update);
+routes.delete("/client/:id", clientController.delete);
 
 export { routes };
