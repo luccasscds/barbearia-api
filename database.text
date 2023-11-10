@@ -1,0 +1,79 @@
+CREATE TABLE Client (
+    codClient   INT PRIMARY KEY AUTO_INCREMENT,
+    nameClient  VARCHAR(100) NOT NULL,
+    emailClient VARCHAR(100) NOT NULL
+);
+/
+CREATE TABLE Service (
+    codService  INT PRIMARY KEY AUTO_INCREMENT,
+    nameService VARCHAR(50) NOT NULL,
+    price       FLOAT(10, 2) NOT NULL,
+    durationMin INT NOT NULL
+);
+/
+-- CREATE TABLE ClientService (
+--     codClientService    INT PRIMARY KEY AUTO_INCREMENT,
+--     codClient           INT NOT NULL,
+--     codService          INT NOT NULL
+-- );
+/
+CREATE TABLE VirtualLine (
+    codVirtual          INT PRIMARY KEY AUTO_INCREMENT,
+    codClient           INT NOT NULL,
+    codService          INT NOT NULL,
+    status              VARCHAR(15) NOT NULL,
+    dateVirtual         DATE NOT NULL,
+    CONSTRAINT UC_client_service_date UNIQUE (codClient, codService, dateVirtual)
+    -- startTime           VARCHAR(8) NOT NULL,
+    -- endTime             VARCHAR(8) NOT NULL
+);
+/
+
+
+-- INSERTS
+
+INSERT INTO Client (nameClient, emailClient) VALUES 
+('João Silva',      'joao.silva@email.com'),
+('Maria Oliveira',  'maria.oliveira@email.com'),
+('Pedro Santos',    'pedro.santos@email.com'),
+('Ana Pereira',     'ana.pereira@email.com'),
+('Carlos Rocha',    'carlos.rocha@email.com');
+/
+INSERT INTO Service (nameService, price, durationMin) VALUES 
+('Corte de Cabelo',                     30.00, 30),
+('Barba Tradicional',                   20.00, 20),
+('Pacote Completo (Cabelo + Barba)',    45.00, 60),
+('Design de Sobrancelhas',              15.00, 15),
+('Tratamento Capilar',                  40.00, 45);
+-- /
+-- INSERT INTO ClientService (codClient, codService) VALUES 
+-- (1, 1),
+-- (1, 2),
+-- (1, 4),
+-- (2, 4),
+-- (2, 5),
+-- (3, 3),
+-- (3, 4),
+-- (4, 5),
+-- (5, 2);
+/
+INSERT INTO VirtualLine (codClient, codService, status, dateVirtual) VALUES 
+(1, 1, 'Tempo estimado', current_date),
+(1, 2, 'Tempo estimado', current_date),
+(1, 4, 'Tempo estimado', current_date),
+(2, 4, 'Tempo estimado', current_date),
+(2, 5, 'Tempo estimado', current_date),
+(3, 3, 'Tempo estimado', current_date),
+(3, 4, 'Tempo estimado', current_date),
+(4, 5, 'Tempo estimado', current_date),
+(5, 2, 'Tempo estimado', current_date);
+/
+
+
+
+-- QUERYs
+select 
+    distinct codClient, 
+    status,
+    dateVirtual 
+from VirtualLine v;
