@@ -1,5 +1,7 @@
 import express from 'express';
 import { clientController } from './controllers/clientController/client.controller';
+import { eventController } from './controllers/eventController/event.controller';
+import { serviceController } from './controllers/serviceController/service.controller';
 
 const routes = express.Router();
 
@@ -9,5 +11,11 @@ routes.get("/client/:id", clientController.get);
 routes.post("/client", clientController.create);
 routes.put("/client", clientController.update);
 routes.delete("/client/:id", clientController.delete);
+
+routes.get("/event/:date", eventController.get);
+routes.post("/event", eventController.create);
+routes.delete("/event", eventController.delete);
+
+routes.get("/service/list", serviceController.getAll);
 
 export { routes };

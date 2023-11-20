@@ -22,10 +22,10 @@ CREATE TABLE VirtualLine (
     codClient           INT NOT NULL,
     codService          INT NOT NULL,
     status              VARCHAR(15) NOT NULL,
-    dateVirtual         DATE NOT NULL,
+    dateVirtual         DATETIME NOT NULL,
+    startTime          TIME NOT NULL,
+    endTime            TIME NOT NULL,
     CONSTRAINT UC_client_service_date UNIQUE (codClient, codService, dateVirtual)
-    -- startTime           VARCHAR(8) NOT NULL,
-    -- endTime             VARCHAR(8) NOT NULL
 );
 /
 
@@ -72,8 +72,8 @@ INSERT INTO VirtualLine (codClient, codService, status, dateVirtual) VALUES
 
 
 -- QUERYs
+
 select 
-    distinct codClient, 
-    status,
-    dateVirtual 
+    distinct codClient,
+    status
 from VirtualLine v;

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { deleteClient, getClient, newClient, updateClient } from '../../../db';
+import { deleteClient, getClient, newClient, updateClient } from '../../../db/clientDB';
 
 export const clientController = {
     async get(req: Request, res: Response) {

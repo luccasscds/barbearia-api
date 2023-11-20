@@ -1,15 +1,5 @@
-import mysql from 'mysql2/promise';
 import { IResponseDB } from '../routes/controllers/types';
-
-async function createConnection(): Promise<mysql.Connection> {
-    if (!process.env.DATABASE_URL) {
-        console.error('não está configurado a variável DATABASE_URL.');
-        // @ts-ignore
-        return;
-    };
-
-    return await mysql.createConnection(process.env.DATABASE_URL!);
-};
+import { createConnection } from './createConnection';
 
 export async function getClient(id: number) {
     try {
@@ -22,7 +12,6 @@ export async function getClient(id: number) {
         return result;
     } catch (error) {
         return error;
-    } finally {
     }
 };
 
