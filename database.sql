@@ -23,12 +23,21 @@ CREATE TABLE VirtualLine (
     codService          INT NOT NULL,
     status              VARCHAR(15) NOT NULL,
     dateVirtual         DATETIME NOT NULL,
-    startTime          TIME NOT NULL,
-    endTime            TIME NOT NULL,
+    startTime           TIME NOT NULL,
+    endTime             TIME NOT NULL,
     CONSTRAINT UC_client_service_date UNIQUE (codClient, codService, dateVirtual)
 );
 /
-
+CREATE TABLE Timetable (
+    codTime     INT PRIMARY KEY AUTO_INCREMENT,
+    day         VARCHAR(13) NOT NULL,
+    active      BOOLEAN NOT NULL,
+    time01      TIME,
+    time02      TIME,
+    time03      TIME,
+    time04      TIME
+);
+/
 
 -- INSERTS
 
@@ -68,6 +77,14 @@ INSERT INTO VirtualLine (codClient, codService, status, dateVirtual) VALUES
 (4, 5, 'Tempo estimado', current_date),
 (5, 2, 'Tempo estimado', current_date);
 /
+INSERT INTO Timetable (day, active, time01, time02, time03, time04) VALUES
+('Segunda-feira',   true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
+('Terça-feira',     true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
+('Quarta-feira',    true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
+('Quinta-feira',    true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
+('Sexta-feira',     true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
+('Sábado',          true, '09:00:00', '17:00:00', '', ''),
+('Domingo',         false, '', '', '', '');
 
 
 
@@ -77,3 +94,11 @@ select
     distinct codClient,
     status
 from VirtualLine v;
+
+UPDATE Timetable SET
+    active = ?,
+    time01 = NULL,
+    time02 = NULL,
+    time03 = NULL,
+    time04 = NULL
+WHERE codTime = 6;

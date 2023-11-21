@@ -2,6 +2,7 @@ import express from 'express';
 import { clientController } from './controllers/clientController/client.controller';
 import { eventController } from './controllers/eventController/event.controller';
 import { serviceController } from './controllers/serviceController/service.controller';
+import { timetableController } from './controllers/timetableController/timetable.controller';
 
 const routes = express.Router();
 
@@ -17,5 +18,8 @@ routes.post("/event", eventController.create);
 routes.delete("/event", eventController.delete);
 
 routes.get("/service/list", serviceController.getAll);
+
+routes.get("/timetable/list", timetableController.getAll);
+routes.put("/timetable", timetableController.update);
 
 export { routes };
