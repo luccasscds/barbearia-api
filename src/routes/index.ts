@@ -18,6 +18,9 @@ routes.post("/event", eventController.create);
 routes.delete("/event", eventController.delete);
 
 routes.get("/service/list", serviceController.getAll);
+routes.post("/service", serviceController.create);
+routes.put("/service", serviceController.update);
+routes.delete("/service/:id", serviceController.delete);
 
 routes.get("/timetable/list", timetableController.getAll);
 routes.put("/timetable", timetableController.update);
