@@ -16,6 +16,21 @@ export const serviceDB = {
             return error;
         }
     },
+    async get(codService: number) {
+        try {
+            const db = await createConnection();
+            const sql = `select 
+                            codService, nameService, price, durationMin 
+                        from Service
+                        where codService = ?;`;
+            const [result] = await db.query(sql, [codService]);
+    
+            db.end();
+            return result;
+        } catch (error) {
+            return error;
+        }
+    },
     async update(codService: number, nameService: string, price: number, durationMin: number): Promise<IResponseDB> {
         try {
             const db = await createConnection();

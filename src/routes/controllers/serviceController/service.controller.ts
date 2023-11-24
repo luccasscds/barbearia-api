@@ -6,6 +6,11 @@ export const serviceController = {
         const response = await serviceDB.getAll();
         res.json(response);
     },
+    async get(req: Request, res: Response) {
+        const { id } = req.params;
+        const response = await serviceDB.get(Number(id));
+        res.json(response);
+    },
     async create(req: Request, res: Response) {
         const {nameService, price, durationMin } = req.body;
         const response = await serviceDB.create(nameService, price, durationMin);
