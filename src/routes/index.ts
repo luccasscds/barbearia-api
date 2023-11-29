@@ -8,6 +8,7 @@ const routes = express.Router();
 
 routes.get("/", async (_, res) => res.send('Bem vindo :)') );
 
+routes.get("/client/list", clientController.getAll);
 routes.get("/client/:id", clientController.get);
 routes.post("/client", clientController.create);
 routes.put("/client", clientController.update);
