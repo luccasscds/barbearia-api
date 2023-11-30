@@ -15,6 +15,20 @@ export const timetableDB = {
             return error;
         }
     },
+    async get(codTime: number) {
+        try {
+            const db = await createConnection();
+            const sql = `select 
+                            codTime, day, active, time01, time02, time03, time04
+                        from Timetable where codTime = ?;`;
+            const [result] = await db.query(sql, [codTime]);
+    
+            db.end();
+            return result;
+        } catch (error) {
+            return error;
+        }
+    },
     async updateTimetable(codTime: number, active: boolean, time01: string | null, time02: string | null, time03: string | null, time04: string | null) {
         try {
             const db = await createConnection();

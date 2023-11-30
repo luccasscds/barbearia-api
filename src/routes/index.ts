@@ -25,6 +25,7 @@ routes.put("/service", serviceController.update);
 routes.delete("/service/:id", serviceController.delete);
 
 routes.get("/timetable/list", timetableController.getAll);
+routes.get("/timetable/:id", timetableController.get);
 routes.put("/timetable", timetableController.update);
 
 export { routes };

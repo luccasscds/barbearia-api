@@ -6,6 +6,11 @@ export const timetableController = {
         const response = await timetableDB.getAll();
         res.json(response);
     },
+    async get(req: Request, res: Response) {
+        const {id} = req.params;
+        const response = await timetableDB.get(Number(id));
+        res.json(response);
+    },
     async update(req: Request, res: Response) {
         const { codTime, active, time01, time02, time03, time04 } = req.body;
         const response = await timetableDB.updateTimetable(codTime, active, time01, time02, time03, time04);
