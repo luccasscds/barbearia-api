@@ -3,10 +3,14 @@ import { clientController } from './controllers/clientController/client.controll
 import { eventController } from './controllers/eventController/event.controller';
 import { serviceController } from './controllers/serviceController/service.controller';
 import { timetableController } from './controllers/timetableController/timetable.controller';
+import { authController } from './controllers/authController';
 
 const routes = express.Router();
 
 routes.get("/", async (_, res) => res.send('Bem vindo :)') );
+
+routes.post("/signIn", authController.signIn);
+routes.post("/signUp", authController.signUp);
 
 routes.get("/client/list", clientController.getAll);
 routes.get("/client/:id", clientController.get);

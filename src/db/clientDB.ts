@@ -29,12 +29,12 @@ export const clientDB = {
         }
     },
     
-    async new(name: string, email: string): Promise<IResponseDB> {
+    async new(name: string, email: string, password?: string): Promise<IResponseDB> {
         const db = await createConnection();
         
         try {
-            const sql = `INSERT INTO Client (nameClient, emailClient) VALUES (?, ?);`
-            const [result] = await db.query(sql, [name, email]);
+            const sql = `INSERT INTO Client (nameClient, emailClient, passwordClient) VALUES (?, ?, ?);`
+            const [result] = await db.query(sql, [name, email, password]);
         
             db.commit();
             return result as any;

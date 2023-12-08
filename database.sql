@@ -1,7 +1,8 @@
 CREATE TABLE Client (
-    codClient   INT PRIMARY KEY AUTO_INCREMENT,
-    nameClient  VARCHAR(100) NOT NULL,
-    emailClient VARCHAR(100) NOT NULL
+    codClient       INT PRIMARY KEY AUTO_INCREMENT,
+    nameClient      VARCHAR(100) NOT NULL,
+    emailClient     VARCHAR(100) NOT NULL,
+    passwordClient  VARCHAR(500)
 );
 /
 CREATE TABLE Service (
