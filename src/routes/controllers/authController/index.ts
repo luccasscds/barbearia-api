@@ -7,10 +7,18 @@ export const authController = {
     async signIn(req: Request, res: Response) {
         try {
             const { email, password } = req.body;
+            let isExistUser = false;
     
-            const token = await tools.verifyToken(password);
-            
-            const newToken = await tools.generateToken();
+            // const token = await tools.verifyToken(password);
+            const allClient = await clientDB.getAll();
+            for(const client of allClient) {
+                if(client.emailClient === email) {
+                    isExistUser = true;
+                };
+            };
+
+            if(!isExistUser) throw 'Usuário ou senha está incorreto';
+            const token = await tools.generateToken();
             res.json({token});
         } catch (error) {
             res.json(error)

@@ -2,16 +2,16 @@ import { IResponseDB } from '../routes/controllers/types';
 import { createConnection } from './createConnection';
 
 export const clientDB = {
-    async getAll() {
+    async getAll(): Promise<IResponseClient[]> {
         try {
             const db = await createConnection();
             const sql = `select codClient, nameClient, emailClient from Client;`
             const [result] = await db.query(sql);
     
             db.end();
-            return result;
+            return result as any;
         } catch (error) {
-            return error;
+            return error as any;
         }
     },
 
@@ -82,4 +82,10 @@ export const clientDB = {
             db.end();
         };
     },
+}
+
+interface IResponseClient {
+    codClient: number,
+    nameClient: string,
+    emailClient: string,
 }
