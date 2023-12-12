@@ -23,6 +23,18 @@ export const eventDB = {
             return error;
         }
     },
+    async getEventByMonth(id: number) {
+        try {
+            const db = await createConnection();
+            const sql = `select distinct dateVirtual from VirtualLine where month(dateVirtual) = ?;`;
+            const [result] = await db.query(sql, [id]);
+    
+            db.end();
+            return result;
+        } catch (error) {
+            return error;
+        }
+    },
     async createEvent(codClient: number, codService: number, dateVirtual: string, startTime: string, endTime: string): Promise<IResponseDB> {
         try {
             const db = await createConnection();

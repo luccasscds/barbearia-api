@@ -19,6 +19,7 @@ routes.put("/client", clientController.update);
 routes.delete("/client/:id", clientController.delete);
 
 routes.get("/event/:date", eventController.get);
+routes.get("/event/date/month/:id", eventController.getEventByMonth);
 routes.post("/event", eventController.create);
 routes.delete("/event", eventController.delete);
 
