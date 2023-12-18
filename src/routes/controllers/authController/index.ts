@@ -2,26 +2,34 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { clientDB } from "../../../db/clientDB";
 import { tools } from "../../../tools";
+import moment from "moment";
 
 export const authController = {
     async signIn(req: Request, res: Response) {
         try {
             const { email, password } = req.body;
-            let isExistUser = false;
-    
-            // const token = await tools.verifyToken(password);
-            const allClient = await clientDB.getAll();
-            for(const client of allClient) {
-                if(client.emailClient === email) {
-                    isExistUser = true;
-                };
-            };
+            const EmailOrPasswdMessageError = 'Email ou Senha estão incorretos';
 
-            if(!isExistUser) throw 'Usuário ou senha está incorreto';
-            const token = await tools.generateToken();
-            res.json({token});
+            const selectedClient = await clientDB.getByEmail(email);
+
+            if(!selectedClient || !selectedClient?.passwordClient) throw EmailOrPasswdMessageError;
+            const decryptPassword = tools.decrypt(selectedClient.passwordClient);
+            if(password !== decryptPassword) throw EmailOrPasswdMessageError;
+            const newToken = await tools.generateToken();
+
+            selectedClient.passwordClient = undefined;
+            selectedClient.isADM = !!selectedClient.isADM;
+
+            const client = {
+                ...selectedClient,
+                expirationTimeInMinute: 60, // minute
+                dateCreated: moment().toJSON(),
+            }
+            const encryptClient = await tools.encrypt(JSON.stringify(client));
+            
+            res.json({ token: newToken, client: encryptClient });
         } catch (error) {
-            res.json(error)
+            res.json({error});
         }
     },
     async signUp(req: Request, res: Response) {
@@ -38,9 +46,9 @@ export const authController = {
             const newPassword = tools.encrypt(password);
             await clientDB.new(name, email, newPassword);
 
-            res.json(true);
+            res.json({status: true});
         } catch(error) {
-            res.json(error);
+            res.json({error});
         };
     },
 };

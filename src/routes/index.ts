@@ -12,25 +12,27 @@ routes.get("/", async (_, res) => res.send('Bem vindo :)') );
 routes.post("/signIn", authController.signIn);
 routes.post("/signUp", authController.signUp);
 
-routes.get("/client/list", clientController.getAll);
-routes.get("/client/:id", clientController.get);
-routes.post("/client", clientController.create);
-routes.put("/client", clientController.update);
-routes.delete("/client/:id", clientController.delete);
+// routes authorized
 
-routes.get("/event/:date", eventController.get);
-routes.get("/event/date/month/:id", eventController.getEventByMonth);
-routes.post("/event", eventController.create);
-routes.delete("/event", eventController.delete);
+routes.get("/authorized/client/list", clientController.getAll);
+routes.get("/authorized/client/:id", clientController.get);
+routes.post("/authorized/client", clientController.create);
+routes.put("/authorized/client", clientController.update);
+routes.delete("/authorized/client/:id", clientController.delete);
 
-routes.get("/service/list", serviceController.getAll);
-routes.get("/service/:id", serviceController.get);
-routes.post("/service", serviceController.create);
-routes.put("/service", serviceController.update);
-routes.delete("/service/:id", serviceController.delete);
+routes.get("/authorized/event/:date", eventController.get);
+routes.get("/authorized/event/date/month/:id", eventController.getEventByMonth);
+routes.post("/authorized/event", eventController.create);
+routes.delete("/authorized/event", eventController.delete);
 
-routes.get("/timetable/list", timetableController.getAll);
-routes.get("/timetable/:id", timetableController.get);
-routes.put("/timetable", timetableController.update);
+routes.get("/authorized/service/list", serviceController.getAll);
+routes.get("/authorized/service/:id", serviceController.get);
+routes.post("/authorized/service", serviceController.create);
+routes.put("/authorized/service", serviceController.update);
+routes.delete("/authorized/service/:id", serviceController.delete);
+
+routes.get("/authorized/timetable/list", timetableController.getAll);
+routes.get("/authorized/timetable/:id", timetableController.get);
+routes.put("/authorized/timetable", timetableController.update);
 
 export { routes };

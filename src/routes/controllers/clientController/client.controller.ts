@@ -18,7 +18,7 @@ export const clientController = {
         if (typeof response.insertId === "number") {
             res.status(201).json({ message: `Registro criado ID: ${response.insertId}` });
         } else {
-            res.status(400).json({ erroMessage: response });
+            res.status(400).json({ error: response });
         }
     },
     async update(req: Request, res: Response) {
@@ -28,7 +28,7 @@ export const clientController = {
         if (typeof response.insertId === "number") {
             res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
         } else {
-            res.status(400).json({ erroMessage: response });
+            res.status(400).json({ error: response });
         }
     },
     async delete(req: Request, res: Response) {
@@ -39,7 +39,7 @@ export const clientController = {
         if (typeof response.insertId === "number") {
             res.status(200).json({ message: `${response.affectedRows} registro(s) deletado(s)` });
         } else {
-            res.status(400).json({ erroMessage: response });
+            res.status(400).json({ error: response });
         }
     },
 };
