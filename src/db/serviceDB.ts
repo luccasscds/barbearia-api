@@ -6,7 +6,7 @@ export const serviceDB = {
         try {
             const db = await createConnection();
             const sql = `select 
-                            codService, nameService, price, durationMin 
+                            codService, nameService, price, durationMin, active
                         from Service;`;
             const [result] = await db.query(sql);
     
@@ -20,7 +20,7 @@ export const serviceDB = {
         try {
             const db = await createConnection();
             const sql = `select 
-                            codService, nameService, price, durationMin 
+                            codService, nameService, price, durationMin, active
                         from Service
                         where codService = ?;`;
             const [result] = await db.query(sql, [codService]);
@@ -31,16 +31,18 @@ export const serviceDB = {
             return error;
         }
     },
-    async update(codService: number, nameService: string, price: number, durationMin: number): Promise<IResponseDB> {
+    async update(codService: number, nameService: string, price: number, durationMin: number, active: boolean): Promise<IResponseDB> {
         try {
             const db = await createConnection();
             const sql = `UPDATE Service SET
                             nameService = ?,
                             price = ?,
-                            durationMin = ?
+                            durationMin = ?,
+                            active = ?
                         WHERE codService = ?`;
-            const [result] = await db.query(sql, [nameService, price, durationMin, codService]);
+            const [result] = await db.query(sql, [nameService, price, durationMin, active, codService]);
     
+            db.commit();
             db.end();
             return result as any;
         } catch (error) {
@@ -50,8 +52,8 @@ export const serviceDB = {
     async create(nameService: string, price: number, durationMin: number): Promise<IResponseDB> {
         try {
             const db = await createConnection();
-            const sql = `INSERT INTO Service (nameService, price, durationMin) VALUES 
-                        (?, ?, ?);`;
+            const sql = `INSERT INTO Service (nameService, price, durationMin, active) VALUES 
+                        (?, ?, ?, true);`;
             const [result] = await db.query(sql, [nameService, price, durationMin]);
     
             db.end();

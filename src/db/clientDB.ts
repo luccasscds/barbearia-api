@@ -38,7 +38,7 @@ export const clientDB = {
             EmailSchema.parse(email);
 
             const db = await createConnection();
-            const sql = `select codClient, passwordClient, isADM
+            const sql = `select codClient, nameClient, passwordClient, isADM
                             from Client where emailClient = ?;`
             const [result] = await db.query(sql, [email]) as any[];
     
@@ -109,6 +109,7 @@ interface IResponseClient {
 
 interface IResponseClientByEmail {
     codClient: number,
+    nameClient: string,
     passwordClient?: string,
     isADM: boolean,
 }

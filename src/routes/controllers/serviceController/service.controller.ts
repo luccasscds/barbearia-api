@@ -22,8 +22,8 @@ export const serviceController = {
         };
     },
     async update(req: Request, res: Response) {
-        const { codService, nameService, price, durationMin } = req.body;
-        const response = await serviceDB.update(codService, nameService, price, durationMin);
+        const { codService, nameService, price, durationMin, active } = req.body;
+        const response = await serviceDB.update(codService, nameService, price, durationMin, active);
     
         if (typeof response.insertId === "number") {
             res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });

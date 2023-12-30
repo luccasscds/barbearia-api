@@ -23,6 +23,49 @@ export const eventDB = {
             return error;
         }
     },
+    async getEventByClient(codClient: number) {
+        try {
+            const db = await createConnection();
+            const sql = `select 
+                        distinct vl.dateVirtual, vl.startTime, vl.endTime,
+                        (
+                            select GROUP_CONCAT(codService) from Service where codService in (
+                                select v.codService
+                                from VirtualLine v
+                                where v.codClient = vl.codClient
+                                and v.dateVirtual = vl.dateVirtual
+                                and v.startTime = vl.startTime
+                            )
+                        ) codServices,
+                        (
+                            select GROUP_CONCAT(nameService) from Service where codService in (
+                                select v.codService
+                                from VirtualLine v
+                                where v.codClient = vl.codClient
+                                and v.dateVirtual = vl.dateVirtual
+                                and v.startTime = vl.startTime
+                            )
+                        ) nameServices,
+                        (
+                            select sum(price) from Service where codService in (
+                                select v.codService
+                                from VirtualLine v
+                                where v.codClient = vl.codClient
+                                and v.dateVirtual = vl.dateVirtual
+                                and v.startTime = vl.startTime
+                            )
+                        ) total
+                    from VirtualLine vl
+                    where vl.codClient = ?
+                    order by vl.dateVirtual desc, vl.startTime desc;`;
+            const [result] = await db.query(sql, [codClient]);
+    
+            db.end();
+            return result;
+        } catch (error) {
+            return error;
+        }
+    },
     async getEventByMonth(id: number) {
         try {
             const db = await createConnection();
@@ -50,13 +93,14 @@ export const eventDB = {
             return error as any;
         }
     },
-    async deleteEvent(codClient: number, dateVirtual: string): Promise<IResponseDB> {
+    async deleteEvent(codClient: number, dateVirtual: string, startTime: string): Promise<IResponseDB> {
         try {
             const db = await createConnection();
             const sql = `DELETE FROM VirtualLine 
                         WHERE codClient = ?
-                        and dateVirtual = ?;`;
-            const [result] = await db.query(sql, [codClient, dateVirtual]);
+                        and dateVirtual = ?
+                        and startTime = ?;`;
+            const [result] = await db.query(sql, [codClient, dateVirtual, startTime]);
     
             db.end();
             return result as any;

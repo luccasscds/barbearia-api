@@ -7,6 +7,11 @@ export const eventController = {
         const response = await eventDB.getEvent(date);
         res.json(response);
     },
+    async getEventByClient(req: Request, res: Response) {
+        const { id } = req.params;
+        const response = await eventDB.getEventByClient(Number(id));
+        res.json(response);
+    },
     async getEventByMonth(req: Request, res: Response) {
         const { id } = req.params;
         const response = await eventDB.getEventByMonth(Number(id));
@@ -22,8 +27,8 @@ export const eventController = {
         }
     },
     async delete(req: Request, res: Response) {
-        const { codClient, dateVirtual } = req.body;
-        const response = await eventDB.deleteEvent(codClient, dateVirtual);
+        const { codClient, dateVirtual, startTime } = req.body;
+        const response = await eventDB.deleteEvent(codClient, dateVirtual, startTime);
     
         if (typeof response.insertId === "number") {
             res.status(200).json({ message: `${response.affectedRows} registro(s) deletado(s)` });

@@ -11,7 +11,8 @@ CREATE TABLE Service (
     codService  INT PRIMARY KEY AUTO_INCREMENT,
     nameService VARCHAR(50) NOT NULL,
     price       FLOAT(10, 2) NOT NULL,
-    durationMin INT NOT NULL
+    durationMin INT NOT NULL,
+    active      BOOLEAN NOT NULL,
 );
 /
 -- CREATE TABLE ClientService (
@@ -28,7 +29,7 @@ CREATE TABLE VirtualLine (
     dateVirtual         DATETIME NOT NULL,
     startTime           TIME NOT NULL,
     endTime             TIME NOT NULL,
-    CONSTRAINT UC_client_service_date UNIQUE (codClient, codService, dateVirtual)
+    CONSTRAINT UC_client_service_date_startTime UNIQUE (codClient, codService, dateVirtual, startTime)
 );
 /
 CREATE TABLE Timetable (

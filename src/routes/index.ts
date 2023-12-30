@@ -21,6 +21,7 @@ routes.put("/authorized/client", clientController.update);
 routes.delete("/authorized/client/:id", clientController.delete);
 
 routes.get("/authorized/event/:date", eventController.get);
+routes.get("/authorized/event/client/:id", eventController.getEventByClient);
 routes.get("/authorized/event/date/month/:id", eventController.getEventByMonth);
 routes.post("/authorized/event", eventController.create);
 routes.delete("/authorized/event", eventController.delete);
