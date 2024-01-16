@@ -4,6 +4,7 @@ CREATE TABLE Client (
     emailClient     VARCHAR(100) NOT NULL,
     passwordClient  VARCHAR(500),
     isADM           BOOLEAN,
+    numberPhone     VARCHAR(30),
     CONSTRAINT UC_email UNIQUE (emailClient)
 );
 /
@@ -29,6 +30,7 @@ CREATE TABLE VirtualLine (
     dateVirtual         DATETIME NOT NULL,
     startTime           TIME NOT NULL,
     endTime             TIME NOT NULL,
+    codPaymentMethod    INT NOT NULL,
     CONSTRAINT UC_client_service_date_startTime UNIQUE (codClient, codService, dateVirtual, startTime)
 );
 /
@@ -42,6 +44,17 @@ CREATE TABLE Timetable (
     time04      TIME
 );
 /
+CREATE TABLE ConfigSchedule (
+  codConfig INT PRIMARY KEY,
+  keyConfig VARCHAR(100) NOT NULL,
+  valueConfig VARCHAR(200) NOT NULL
+);
+/
+CREATE TABLE PaymentMethod (
+  codPaymentMethod INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL
+);
+
 
 -- INSERTS
 
@@ -89,20 +102,12 @@ INSERT INTO Timetable (day, active, time01, time02, time03, time04) VALUES
 ('Sexta-feira',     true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
 ('Sábado',          true, '09:00:00', '17:00:00', '', ''),
 ('Domingo',         false, '', '', '', '');
-
-
-
--- QUERYs
-
-select 
-    distinct codClient,
-    status
-from VirtualLine v;
-
-UPDATE Timetable SET
-    active = ?,
-    time01 = NULL,
-    time02 = NULL,
-    time03 = NULL,
-    time04 = NULL
-WHERE codTime = 6;
+/
+Insert into ConfigSchedule (codConfig, keyConfig, valueConfig) values 
+(1, 'timeIntervalMin', '15'),
+(2, 'maxDay', '15'),
+(3, 'cancelHoursBefore', '2'),
+(4, 'textCancellationPolicy', ''),
+(5, 'allowCancellation', 'true'),
+(6, 'textToClient', ''),
+(7, 'pixRatePercentage', '50'),

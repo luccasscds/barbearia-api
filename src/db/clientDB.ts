@@ -1,12 +1,13 @@
 import { ZodError, z } from 'zod';
-import { IResponseDB } from '../routes/controllers/types';
+import { IErrorSQL, IResponseDB } from '../routes/controllers/types';
 import { createConnection } from './createConnection';
 
 export const clientDB = {
-    async getAll(): Promise<IResponseClient[]> {
+    async getAll(): Promise<IResponseClient[] | IErrorSQL> {
         try {
             const db = await createConnection();
-            const sql = `select codClient, nameClient, emailClient from Client;`
+            const sql = `select codClient, nameClient, emailClient, numberPhone
+                        from Client where isADM = false;`
             const [result] = await db.query(sql);
     
             db.end();
@@ -16,15 +17,15 @@ export const clientDB = {
         }
     },
 
-    async get(id: number) {
+    async get(id: number): Promise<IResponseClient[] | IErrorSQL> {
         try {
             const db = await createConnection();
-            const sql = `   select codClient, nameClient, emailClient 
+            const sql = `   select codClient, nameClient, emailClient, numberPhone
                             from Client where codClient = ?;`
             const [result] = await db.query(sql, [id]);
     
             db.end();
-            return result;
+            return result as any;
         } catch (error) {
             throw error;
         }

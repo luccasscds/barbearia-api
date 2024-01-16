@@ -7,7 +7,7 @@ export const serviceDB = {
             const db = await createConnection();
             const sql = `select 
                             codService, nameService, price, durationMin, active
-                        from Service;`;
+                        from Service where active = true;`;
             const [result] = await db.query(sql);
     
             db.end();
@@ -16,14 +16,14 @@ export const serviceDB = {
             return error;
         }
     },
-    async get(codService: number) {
+    async get(codServices: string) {
         try {
             const db = await createConnection();
             const sql = `select 
                             codService, nameService, price, durationMin, active
                         from Service
-                        where codService = ?;`;
-            const [result] = await db.query(sql, [codService]);
+                        where codService in( ${codServices.replace(/\s/g, '')} );`;
+            const [result] = await db.query(sql);
     
             db.end();
             return result;
