@@ -44,7 +44,10 @@ export const authController = {
             UserSchema.parse({ name, email, password });
             
             const newPassword = tools.encrypt(password);
-            await clientDB.new(name, email, newPassword);
+            await clientDB.new({
+                name, email, 
+                password: newPassword,
+            });
 
             res.json({status: true});
         } catch(error) {

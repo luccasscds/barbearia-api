@@ -52,15 +52,16 @@ export const clientDB = {
         }
     },
     
-    async new(name: string, email: string, password?: string, isADM = false ): Promise<IResponseDB> {
+    async new(newClient: IParamsNewClient): Promise<IResponseDB> {
         try {
+            const { email, name, password, isADM, numberPhone } = newClient;
             const db = await createConnection();
             const sql = `INSERT INTO Client 
-                            (nameClient, emailClient, passwordClient, isADM) 
+                            (nameClient, emailClient, passwordClient, isADM, numberPhone) 
                         VALUES 
-                            (?, ?, ?, ?);
+                            (?, ?, ?, ?, ?);
             `;
-            const [result] = await db.query(sql, [name, email, password, isADM]);
+            const [result] = await db.query(sql, [name, email, (password ?? ''), (isADM ?? false), (numberPhone ?? '')]);
 
             db.commit();
             db.end();
@@ -113,4 +114,12 @@ interface IResponseClientByEmail {
     nameClient: string,
     passwordClient?: string,
     isADM: boolean,
+}
+
+interface IParamsNewClient {
+    name: string,
+    email: string,
+    password?: string,
+    isADM?: boolean,
+    numberPhone?: string,
 }

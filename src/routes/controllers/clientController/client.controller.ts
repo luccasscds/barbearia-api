@@ -23,14 +23,19 @@ export const clientController = {
         res.json(response);
     },
     async create(req: Request, res: Response) {
-        const { name, email } = req.body;
-        const response = await clientDB.new(name, email);
+        const { name, email, numberPhone } = req.body;
+        const response = await clientDB.new({
+            name, email, numberPhone
+        });
     
         if((response as IErrorSQL).errno) {
             res.json({ error: response });
             return;
         };
-        res.status(201).json({ message: `Registro criado ID: ${response.insertId}` });
+        res.status(201).json({
+            id: response.insertId,
+            message: 'Registro criado',
+        });
     },
     async update(req: Request, res: Response) {
         const { id, name, email } = req.body;

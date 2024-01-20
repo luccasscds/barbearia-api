@@ -1,11 +1,11 @@
 CREATE TABLE Client (
     codClient       INT PRIMARY KEY AUTO_INCREMENT,
     nameClient      VARCHAR(100) NOT NULL,
-    emailClient     VARCHAR(100) NOT NULL,
+    emailClient     VARCHAR(100),
     passwordClient  VARCHAR(500),
     isADM           BOOLEAN,
     numberPhone     VARCHAR(30),
-    CONSTRAINT UC_email UNIQUE (emailClient)
+    CONSTRAINT UC_name UNIQUE (nameClient)
 );
 /
 CREATE TABLE Service (
@@ -26,11 +26,10 @@ CREATE TABLE VirtualLine (
     codVirtual          INT PRIMARY KEY AUTO_INCREMENT,
     codClient           INT NOT NULL,
     codService          INT NOT NULL,
-    status              VARCHAR(15) NOT NULL,
+    codStatus           INT NOT NULL,
     dateVirtual         DATETIME NOT NULL,
     startTime           TIME NOT NULL,
     endTime             TIME NOT NULL,
-    codPaymentMethod    INT NOT NULL,
     CONSTRAINT UC_client_service_date_startTime UNIQUE (codClient, codService, dateVirtual, startTime)
 );
 /
@@ -50,9 +49,9 @@ CREATE TABLE ConfigSchedule (
   valueConfig VARCHAR(200) NOT NULL
 );
 /
-CREATE TABLE PaymentMethod (
-  codPaymentMethod INT PRIMARY KEY AUTO_INCREMENT,
-  name VARCHAR(100) NOT NULL
+CREATE TABLE Status (
+  codStatus INT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL
 );
 
 
@@ -110,4 +109,15 @@ Insert into ConfigSchedule (codConfig, keyConfig, valueConfig) values
 (4, 'textCancellationPolicy', ''),
 (5, 'allowCancellation', 'true'),
 (6, 'textToClient', ''),
-(7, 'pixRatePercentage', '50'),
+(7, 'pixRatePercentage', '50');
+/
+INSERT INTO Status (codStatus, name) VALUES
+(1, 'Nenhum'),
+(2, 'Confirmado'),
+(3, 'Não confirmou'),
+(4, 'Atrasou'),
+(5, 'Cancelado'),
+(6, 'Não comparecimento'),
+(7, 'Pagou a taxa'),
+(8, 'Pago');
+/

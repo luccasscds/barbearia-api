@@ -6,7 +6,8 @@ export const eventDB = {
         try {
             const db = await createConnection();
             const sql = `select 
-                            distinct vl.dateVirtual, vl.startTime, vl.endTime, vl.status,
+                            distinct vl.dateVirtual, vl.startTime, vl.endTime, vl.codStatus,
+                            (select name from Status where codStatus = vl.codStatus) status,
                             (
                                 select GROUP_CONCAT(v.codVirtual) from VirtualLine v
                                 where v.codClient = vl.codClient
@@ -16,6 +17,7 @@ export const eventDB = {
                             ) codVirtual,
                             (select c.codClient from Client c where c.codClient = vl.codClient) codClient,
                             (select c.nameClient from Client c where c.codClient = vl.codClient) nameClient,
+                            (select c.numberPhone from Client c where c.codClient = vl.codClient) numberPhone,
                             (
                                 select GROUP_CONCAT(codService) from Service where codService in (
                                     select v.codService
