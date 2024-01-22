@@ -7,6 +7,20 @@ export const serviceDB = {
             const db = await createConnection();
             const sql = `select 
                             codService, nameService, price, durationMin, active
+                        from Service;`;
+            const [result] = await db.query(sql);
+    
+            db.end();
+            return result;
+        } catch (error) {
+            return error;
+        }
+    },
+    async getAllActive() {
+        try {
+            const db = await createConnection();
+            const sql = `select 
+                            codService, nameService, price, durationMin
                         from Service where active = true;`;
             const [result] = await db.query(sql);
     

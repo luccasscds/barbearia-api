@@ -33,6 +33,7 @@ routes.delete("/authorized/event/in", eventController.deleteIn);
 
 // Service
 routes.get("/authorized/service/list", serviceController.getAll);
+routes.get("/authorized/service/list/active", serviceController.getAllActive);
 routes.get("/authorized/service/:id", serviceController.get);
 routes.post("/authorized/service", serviceController.create);
 routes.put("/authorized/service", serviceController.update);

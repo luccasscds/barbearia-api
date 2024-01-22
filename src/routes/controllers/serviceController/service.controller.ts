@@ -12,6 +12,15 @@ export const serviceController = {
         };
         res.json(response);
     },
+    async getAllActive(req: Request, res: Response) {
+        const response = await serviceDB.getAllActive();
+
+        if((response as IErrorSQL).errno) {
+            res.json({ error: response });
+            return;
+        };
+        res.json(response);
+    },
     async get(req: Request, res: Response) {
         const { id } = req.params;
         const response = await serviceDB.get(id);
