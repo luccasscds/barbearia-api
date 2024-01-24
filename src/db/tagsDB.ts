@@ -1,13 +1,11 @@
-import { ZodError, z } from 'zod';
-import { IErrorSQL, IResponseDB } from '../routes/controllers/types';
+import { IErrorSQL } from '../routes/controllers/types';
 import { createConnection } from './createConnection';
 
 export const tagsDB = {
     async getAll(): Promise<IResponseTags[] | IErrorSQL> {
         try {
             const db = await createConnection();
-            const sql = `select codStatus, name from Status;
-            `
+            const sql = `select codStatus, name from Status;`
             const [result] = await db.query(sql);
     
             db.end();
