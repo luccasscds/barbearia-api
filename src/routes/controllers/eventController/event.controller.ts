@@ -33,8 +33,11 @@ export const eventController = {
         res.json(response);
     },
     async create(req: Request, res: Response) {
-        const { codClient, codService, dateVirtual, startTime, endTime } = req.body;
-        const response = await eventDB.createEvent(codClient, codService, dateVirtual, startTime, endTime);
+        const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = req.body;
+        
+        const response = await eventDB.createEvent({
+            codClient, codService, codStatus, dateVirtual, startTime, endTime
+        });
 
         if(response.errno) {
             res.json({ error: response });
@@ -43,8 +46,10 @@ export const eventController = {
         res.status(201).json({ message: `Registro criado ID: ${response.insertId}` });
     },
     async update(req: Request, res: Response) {
-        const { codClient, codService, dateVirtual, startTime, endTime, codVirtual } = req.body;
-        const response = await eventDB.updateEvent(codClient, codService, dateVirtual, startTime, endTime, codVirtual);
+        const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = req.body;
+        const response = await eventDB.updateEvent({
+            codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual
+        });
         
         if(response.errno) {
             res.json({ error: response });

@@ -109,7 +109,8 @@ Insert into ConfigSchedule (codConfig, keyConfig, valueConfig) values
 (4, 'textCancellationPolicy', ''),
 (5, 'allowCancellation', 'true'),
 (6, 'textToClient', ''),
-(7, 'pixRatePercentage', '50');
+(7, 'pixRatePercentage', '50')
+(8, 'CancellationNoticePeriod', '2');
 /
 INSERT INTO Status (codStatus, name) VALUES
 (1, 'Nenhum'),

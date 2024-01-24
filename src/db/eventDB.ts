@@ -110,14 +110,15 @@ export const eventDB = {
             return error as any;
         }
     },
-    async createEvent(codClient: number, codService: number, dateVirtual: string, startTime: string, endTime: string): Promise<IResponseDB> {
+    async createEvent(newEvent: IParamsCreateEvent): Promise<IResponseDB> {
         try {
+            const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = newEvent;
             const db = await createConnection();
             const sql = `INSERT INTO VirtualLine 
-                            (codClient, codService, status, dateVirtual, startTime, endTime)
+                            (codClient, codService, codStatus, dateVirtual, startTime, endTime)
                         VALUES 
-                            (?, ?, 'Tempo estimado', ?, ?, ?);`;
-            const [result] = await db.query(sql, [codClient, codService, dateVirtual, startTime, endTime]);
+                            (?, ?, ?, ?, ?, ?);`;
+            const [result] = await db.query(sql, [codClient, codService, (codStatus ?? 1), dateVirtual, startTime, endTime]);
     
             db.end();
             return result as any;
@@ -125,17 +126,19 @@ export const eventDB = {
             return error as any;
         }
     },
-    async updateEvent(codClient: number, codService: number, dateVirtual: string, startTime: string, endTime: string, codVirtual: string): Promise<IResponseDB> {
+    async updateEvent(newEvent: IParamsUpdateEvent): Promise<IResponseDB> {
         try {
+            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = newEvent;
             const db = await createConnection();
             const sql = `UPDATE VirtualLine SET
                             codClient = ?,
                             codService = ?,
+                            codStatus = ?,
                             dateVirtual = ?,
                             startTime = ?,
                             endTime = ?
                         WHERE codVirtual = ?;`;
-            const [result] = await db.query(sql, [codClient, codService, dateVirtual, startTime, endTime, codVirtual]);
+            const [result] = await db.query(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual]);
     
             db.end();
             return result as any;
@@ -171,4 +174,23 @@ export const eventDB = {
             return error as any;
         }
     },
+};
+
+interface IParamsCreateEvent {
+    codClient: number,
+    codService: number,
+    codStatus: number,
+    dateVirtual: string,
+    startTime: string,
+    endTime: string,
+};
+
+interface IParamsUpdateEvent {
+    codClient: number,
+    codService: number,
+    codStatus: number,
+    dateVirtual: string,
+    startTime: string,
+    endTime: string,
+    codVirtual: string,
 };
