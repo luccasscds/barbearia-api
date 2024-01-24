@@ -27,12 +27,12 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/db/serviceDB.ts
-var serviceDB_exports = {};
-__export(serviceDB_exports, {
-  serviceDB: () => serviceDB
+// src/db/configAgendaDB.ts
+var configAgendaDB_exports = {};
+__export(configAgendaDB_exports, {
+  configAgendaDB: () => configAgendaDB
 });
-module.exports = __toCommonJS(serviceDB_exports);
+module.exports = __toCommonJS(configAgendaDB_exports);
 
 // src/db/createConnection.ts
 var import_promise = __toESM(require("mysql2/promise"));
@@ -46,94 +46,48 @@ async function createConnection() {
   return await import_promise.default.createConnection(process.env.DATABASE_URL);
 }
 
-// src/db/serviceDB.ts
-var serviceDB = {
+// src/db/configAgendaDB.ts
+var configAgendaDB = {
   async getAll() {
     try {
       const db = await createConnection();
-      const sql = `select 
-                            codService, nameService, price, durationMin, active
-                        from Service;`;
+      const sql = `select keyConfig, valueConfig from ConfigSchedule;`;
       const [result] = await db.query(sql);
       db.end();
       return result;
     } catch (error) {
-      return error;
+      throw error;
     }
   },
-  async getAllActive() {
+  async get(key) {
     try {
       const db = await createConnection();
-      const sql = `select 
-                            codService, nameService, price, durationMin
-                        from Service where active = true;`;
-      const [result] = await db.query(sql);
+      const sql = `select valueConfig from ConfigSchedule
+                        where keyConfig = ?;`;
+      const [result] = await db.query(sql, [key]);
       db.end();
       return result;
     } catch (error) {
-      return error;
+      throw error;
     }
   },
-  async get(codServices) {
+  async update(keyConfig, valueConfig) {
     try {
       const db = await createConnection();
-      const sql = `select 
-                            codService, nameService, price, durationMin, active
-                        from Service
-                        where codService in( ${codServices.replace(/\s/g, "")} );`;
-      const [result] = await db.query(sql);
-      db.end();
-      return result;
-    } catch (error) {
-      return error;
-    }
-  },
-  async update(codService, nameService, price, durationMin, active) {
-    try {
-      const db = await createConnection();
-      const sql = `UPDATE Service SET
-                            nameService = ?,
-                            price = ?,
-                            durationMin = ?,
-                            active = ?
-                        WHERE codService = ?`;
-      const [result] = await db.query(sql, [nameService, price, durationMin, active, codService]);
+      const sql = `   UPDATE ConfigSchedule SET 
+                            valueConfig = ?
+                            WHERE keyConfig = ?;`;
+      const [result] = await db.query(sql, [valueConfig, keyConfig]);
       db.commit();
       db.end();
       return result;
     } catch (error) {
-      return error;
-    }
-    ;
-  },
-  async create(nameService, price, durationMin) {
-    try {
-      const db = await createConnection();
-      const sql = `INSERT INTO Service (nameService, price, durationMin, active) VALUES 
-                        (?, ?, ?, true);`;
-      const [result] = await db.query(sql, [nameService, price, durationMin]);
-      db.end();
-      return result;
-    } catch (error) {
-      return error;
-    }
-    ;
-  },
-  async delete(codService) {
-    try {
-      const db = await createConnection();
-      const sql = `DELETE FROM Service 
-                        WHERE codService = ?;`;
-      const [result] = await db.query(sql, [codService]);
-      db.end();
-      return result;
-    } catch (error) {
-      return error;
+      throw error;
     }
     ;
   }
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  serviceDB
+  configAgendaDB
 });

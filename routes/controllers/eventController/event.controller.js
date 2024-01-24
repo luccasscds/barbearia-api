@@ -153,31 +153,34 @@ var eventDB = {
       return error;
     }
   },
-  async createEvent(codClient, codService, dateVirtual, startTime, endTime) {
+  async createEvent(newEvent) {
     try {
+      const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = newEvent;
       const db = await createConnection();
       const sql = `INSERT INTO VirtualLine 
-                            (codClient, codService, status, dateVirtual, startTime, endTime)
+                            (codClient, codService, codStatus, dateVirtual, startTime, endTime)
                         VALUES 
-                            (?, ?, 'Tempo estimado', ?, ?, ?);`;
-      const [result] = await db.query(sql, [codClient, codService, dateVirtual, startTime, endTime]);
+                            (?, ?, ?, ?, ?, ?);`;
+      const [result] = await db.query(sql, [codClient, codService, codStatus ?? 1, dateVirtual, startTime, endTime]);
       db.end();
       return result;
     } catch (error) {
       return error;
     }
   },
-  async updateEvent(codClient, codService, dateVirtual, startTime, endTime, codVirtual) {
+  async updateEvent(newEvent) {
     try {
+      const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = newEvent;
       const db = await createConnection();
       const sql = `UPDATE VirtualLine SET
                             codClient = ?,
                             codService = ?,
+                            codStatus = ?,
                             dateVirtual = ?,
                             startTime = ?,
                             endTime = ?
                         WHERE codVirtual = ?;`;
-      const [result] = await db.query(sql, [codClient, codService, dateVirtual, startTime, endTime, codVirtual]);
+      const [result] = await db.query(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual]);
       db.end();
       return result;
     } catch (error) {
@@ -245,8 +248,15 @@ var eventController = {
     res.json(response);
   },
   async create(req, res) {
-    const { codClient, codService, dateVirtual, startTime, endTime } = req.body;
-    const response = await eventDB.createEvent(codClient, codService, dateVirtual, startTime, endTime);
+    const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = req.body;
+    const response = await eventDB.createEvent({
+      codClient,
+      codService,
+      codStatus,
+      dateVirtual,
+      startTime,
+      endTime
+    });
     if (response.errno) {
       res.json({ error: response });
       return;
@@ -255,8 +265,16 @@ var eventController = {
     res.status(201).json({ message: `Registro criado ID: ${response.insertId}` });
   },
   async update(req, res) {
-    const { codClient, codService, dateVirtual, startTime, endTime, codVirtual } = req.body;
-    const response = await eventDB.updateEvent(codClient, codService, dateVirtual, startTime, endTime, codVirtual);
+    const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = req.body;
+    const response = await eventDB.updateEvent({
+      codClient,
+      codService,
+      codStatus,
+      dateVirtual,
+      startTime,
+      endTime,
+      codVirtual
+    });
     if (response.errno) {
       res.json({ error: response });
       return;

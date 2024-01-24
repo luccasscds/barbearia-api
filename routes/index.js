@@ -311,31 +311,34 @@ var eventDB = {
       return error;
     }
   },
-  async createEvent(codClient, codService, dateVirtual, startTime, endTime) {
+  async createEvent(newEvent) {
     try {
+      const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = newEvent;
       const db = await createConnection();
       const sql = `INSERT INTO VirtualLine 
-                            (codClient, codService, status, dateVirtual, startTime, endTime)
+                            (codClient, codService, codStatus, dateVirtual, startTime, endTime)
                         VALUES 
-                            (?, ?, 'Tempo estimado', ?, ?, ?);`;
-      const [result] = await db.query(sql, [codClient, codService, dateVirtual, startTime, endTime]);
+                            (?, ?, ?, ?, ?, ?);`;
+      const [result] = await db.query(sql, [codClient, codService, codStatus ?? 1, dateVirtual, startTime, endTime]);
       db.end();
       return result;
     } catch (error) {
       return error;
     }
   },
-  async updateEvent(codClient, codService, dateVirtual, startTime, endTime, codVirtual) {
+  async updateEvent(newEvent) {
     try {
+      const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = newEvent;
       const db = await createConnection();
       const sql = `UPDATE VirtualLine SET
                             codClient = ?,
                             codService = ?,
+                            codStatus = ?,
                             dateVirtual = ?,
                             startTime = ?,
                             endTime = ?
                         WHERE codVirtual = ?;`;
-      const [result] = await db.query(sql, [codClient, codService, dateVirtual, startTime, endTime, codVirtual]);
+      const [result] = await db.query(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual]);
       db.end();
       return result;
     } catch (error) {
@@ -403,8 +406,15 @@ var eventController = {
     res.json(response);
   },
   async create(req, res) {
-    const { codClient, codService, dateVirtual, startTime, endTime } = req.body;
-    const response = await eventDB.createEvent(codClient, codService, dateVirtual, startTime, endTime);
+    const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = req.body;
+    const response = await eventDB.createEvent({
+      codClient,
+      codService,
+      codStatus,
+      dateVirtual,
+      startTime,
+      endTime
+    });
     if (response.errno) {
       res.json({ error: response });
       return;
@@ -413,8 +423,16 @@ var eventController = {
     res.status(201).json({ message: `Registro criado ID: ${response.insertId}` });
   },
   async update(req, res) {
-    const { codClient, codService, dateVirtual, startTime, endTime, codVirtual } = req.body;
-    const response = await eventDB.updateEvent(codClient, codService, dateVirtual, startTime, endTime, codVirtual);
+    const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = req.body;
+    const response = await eventDB.updateEvent({
+      codClient,
+      codService,
+      codStatus,
+      dateVirtual,
+      startTime,
+      endTime,
+      codVirtual
+    });
     if (response.errno) {
       res.json({ error: response });
       return;
@@ -451,6 +469,19 @@ var serviceDB = {
       const db = await createConnection();
       const sql = `select 
                             codService, nameService, price, durationMin, active
+                        from Service;`;
+      const [result] = await db.query(sql);
+      db.end();
+      return result;
+    } catch (error) {
+      return error;
+    }
+  },
+  async getAllActive() {
+    try {
+      const db = await createConnection();
+      const sql = `select 
+                            codService, nameService, price, durationMin
                         from Service where active = true;`;
       const [result] = await db.query(sql);
       db.end();
@@ -523,6 +554,15 @@ var serviceDB = {
 var serviceController = {
   async getAll(req, res) {
     const response = await serviceDB.getAll();
+    if (response.errno) {
+      res.json({ error: response });
+      return;
+    }
+    ;
+    res.json(response);
+  },
+  async getAllActive(req, res) {
+    const response = await serviceDB.getAllActive();
     if (response.errno) {
       res.json({ error: response });
       return;
@@ -740,8 +780,7 @@ var tagsDB = {
   async getAll() {
     try {
       const db = await createConnection();
-      const sql = `select codStatus, name from Status;
-            `;
+      const sql = `select codStatus, name from Status;`;
       const [result] = await db.query(sql);
       db.end();
       return result;
@@ -764,6 +803,81 @@ var tagsController = {
   }
 };
 
+// src/db/configAgendaDB.ts
+var configAgendaDB = {
+  async getAll() {
+    try {
+      const db = await createConnection();
+      const sql = `select keyConfig, valueConfig from ConfigSchedule;`;
+      const [result] = await db.query(sql);
+      db.end();
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+  async get(key) {
+    try {
+      const db = await createConnection();
+      const sql = `select valueConfig from ConfigSchedule
+                        where keyConfig = ?;`;
+      const [result] = await db.query(sql, [key]);
+      db.end();
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+  async update(keyConfig, valueConfig) {
+    try {
+      const db = await createConnection();
+      const sql = `   UPDATE ConfigSchedule SET 
+                            valueConfig = ?
+                            WHERE keyConfig = ?;`;
+      const [result] = await db.query(sql, [valueConfig, keyConfig]);
+      db.commit();
+      db.end();
+      return result;
+    } catch (error) {
+      throw error;
+    }
+    ;
+  }
+};
+
+// src/routes/controllers/configAgendaController/configAgendaController.ts
+var configAgendaController = {
+  async getAll(req, res) {
+    const response = await configAgendaDB.getAll();
+    if (response.errno) {
+      res.json({ error: response });
+      return;
+    }
+    ;
+    res.json(response);
+  },
+  async get(req, res) {
+    const { id } = req.params;
+    const response = await configAgendaDB.get(id);
+    if (response.errno) {
+      res.json({ error: response });
+      return;
+    }
+    ;
+    res.json(response);
+  },
+  async update(req, res) {
+    const { keyConfig, valueConfig } = req.body;
+    const response = await configAgendaDB.update(keyConfig, valueConfig);
+    if (response.errno) {
+      res.json({ error: response });
+      return;
+    }
+    ;
+    res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
+  }
+};
+
 // src/routes/index.ts
 var routes = import_express.default.Router();
 routes.get("/", async (_, res) => res.send("Bem vindo :)"));
@@ -782,6 +896,7 @@ routes.put("/authorized/event", eventController.update);
 routes.delete("/authorized/event", eventController.delete);
 routes.delete("/authorized/event/in", eventController.deleteIn);
 routes.get("/authorized/service/list", serviceController.getAll);
+routes.get("/authorized/service/list/active", serviceController.getAllActive);
 routes.get("/authorized/service/:id", serviceController.get);
 routes.post("/authorized/service", serviceController.create);
 routes.put("/authorized/service", serviceController.update);
@@ -790,6 +905,9 @@ routes.get("/authorized/timetable/list", timetableController.getAll);
 routes.get("/authorized/timetable/:id", timetableController.get);
 routes.put("/authorized/timetable", timetableController.update);
 routes.get("/authorized/tag/list", tagsController.getAll);
+routes.get("/authorized/config/agenda", configAgendaController.getAll);
+routes.get("/authorized/config/agenda/:id", configAgendaController.get);
+routes.put("/authorized/config/agenda", configAgendaController.update);
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   routes

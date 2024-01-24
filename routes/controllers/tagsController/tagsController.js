@@ -51,8 +51,7 @@ var tagsDB = {
   async getAll() {
     try {
       const db = await createConnection();
-      const sql = `select codStatus, name from Status;
-            `;
+      const sql = `select codStatus, name from Status;`;
       const [result] = await db.query(sql);
       db.end();
       return result;

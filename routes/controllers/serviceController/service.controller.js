@@ -53,6 +53,19 @@ var serviceDB = {
       const db = await createConnection();
       const sql = `select 
                             codService, nameService, price, durationMin, active
+                        from Service;`;
+      const [result] = await db.query(sql);
+      db.end();
+      return result;
+    } catch (error) {
+      return error;
+    }
+  },
+  async getAllActive() {
+    try {
+      const db = await createConnection();
+      const sql = `select 
+                            codService, nameService, price, durationMin
                         from Service where active = true;`;
       const [result] = await db.query(sql);
       db.end();
@@ -125,6 +138,15 @@ var serviceDB = {
 var serviceController = {
   async getAll(req, res) {
     const response = await serviceDB.getAll();
+    if (response.errno) {
+      res.json({ error: response });
+      return;
+    }
+    ;
+    res.json(response);
+  },
+  async getAllActive(req, res) {
+    const response = await serviceDB.getAllActive();
     if (response.errno) {
       res.json({ error: response });
       return;
