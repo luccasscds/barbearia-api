@@ -178,6 +178,11 @@ var authController = {
     try {
       const { email, password } = req.body;
       const EmailOrPasswdMessageError = "Email ou Senha est\xE3o incorretos";
+      const UserSchema = import_zod2.z.object({
+        email: import_zod2.z.string().email("Email inv\xE1lido"),
+        password: import_zod2.z.string().min(1, "O campo Senha deve conter pelo menos 1 caractere(s)")
+      });
+      UserSchema.parse({ email, password });
       const selectedClient = await clientDB.getByEmail(email);
       if (!selectedClient || !selectedClient?.passwordClient)
         throw EmailOrPasswdMessageError;
@@ -196,26 +201,32 @@ var authController = {
       const encryptClient = await tools.encrypt(JSON.stringify(client));
       res.json({ token: newToken, client: encryptClient });
     } catch (error) {
+      if (error?.issues)
+        error = error.issues[0];
       res.json({ error });
     }
   },
   async signUp(req, res) {
     try {
-      const { name, email, password } = req.body;
+      const { name, email, password, numberPhone } = req.body;
       const UserSchema = import_zod2.z.object({
         name: import_zod2.z.string().min(1, "O campo Nome deve conter pelo menos 1 caractere(s)"),
         email: import_zod2.z.string().email("Email inv\xE1lido"),
+        numberPhone: import_zod2.z.string().min(11, "O campo Telefone deve conter pelo menos 11 caractere(s)").max(11, "O campo Telefone deve conter no m\xE1ximo 11 caractere(s)"),
         password: import_zod2.z.string().min(1, "O campo Senha deve conter pelo menos 1 caractere(s)")
       });
-      UserSchema.parse({ name, email, password });
+      UserSchema.parse({ name, email, password, numberPhone });
       const newPassword = tools.encrypt(password);
       await clientDB.new({
         name,
         email,
-        password: newPassword
+        password: newPassword,
+        numberPhone
       });
       res.json({ status: true });
     } catch (error) {
+      if (error?.issues)
+        error = error.issues[0];
       res.json({ error });
     }
     ;

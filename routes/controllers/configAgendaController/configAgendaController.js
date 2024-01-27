@@ -59,12 +59,12 @@ var configAgendaDB = {
       throw error;
     }
   },
-  async get(key) {
+  async get(keys) {
     try {
       const db = await createConnection();
-      const sql = `select valueConfig from ConfigSchedule
-                        where keyConfig = ?;`;
-      const [result] = await db.query(sql, [key]);
+      const sql = `select keyConfig, valueConfig from ConfigSchedule
+                        where keyConfig in(${keys});`;
+      const [result] = await db.query(sql);
       db.end();
       return result;
     } catch (error) {
@@ -101,7 +101,8 @@ var configAgendaController = {
   },
   async get(req, res) {
     const { id } = req.params;
-    const response = await configAgendaDB.get(id);
+    const newValue = id.replace(/\s/g, "").split(",").map((key) => `"${key}"`);
+    const response = await configAgendaDB.get(newValue.join(","));
     if (response.errno) {
       res.json({ error: response });
       return;

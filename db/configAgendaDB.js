@@ -59,12 +59,12 @@ var configAgendaDB = {
       throw error;
     }
   },
-  async get(key) {
+  async get(keys) {
     try {
       const db = await createConnection();
-      const sql = `select valueConfig from ConfigSchedule
-                        where keyConfig = ?;`;
-      const [result] = await db.query(sql, [key]);
+      const sql = `select keyConfig, valueConfig from ConfigSchedule
+                        where keyConfig in(${keys});`;
+      const [result] = await db.query(sql);
       db.end();
       return result;
     } catch (error) {
