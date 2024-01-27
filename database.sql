@@ -106,11 +106,11 @@ Insert into ConfigSchedule (codConfig, keyConfig, valueConfig) values
 (1, 'timeIntervalMin', '15'),
 (2, 'maxDay', '15'),
 (3, 'cancelHoursBefore', '2'),
-(4, 'textCancellationPolicy', ''),
+(4, 'textCancellationPolicy', 'Caso o cancelamento não seja feito 2h antes, será cobrado 50% do valor do serviço como multa por não comprimento com a as normas do estabelecimento'),
 (5, 'allowCancellation', 'true'),
 (6, 'textToClient', ''),
-(7, 'pixRatePercentage', '50')
-(8, 'CancellationNoticePeriod', '2');
+(7, 'pixRatePercentage', '50'),
+(8, 'keyPix', '');
 /
 INSERT INTO Status (codStatus, name) VALUES
 (1, 'Nenhum'),

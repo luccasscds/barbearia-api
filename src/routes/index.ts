@@ -5,6 +5,7 @@ import { serviceController } from './controllers/serviceController/service.contr
 import { timetableController } from './controllers/timetableController/timetable.controller';
 import { authController } from './controllers/authController';
 import { tagsController } from './controllers/tagsController/tagsController';
+import { configAgendaController } from './controllers/configAgendaController/configAgendaController';
 
 const routes = express.Router();
 
@@ -46,5 +47,10 @@ routes.put("/authorized/timetable", timetableController.update);
 
 // Tags
 routes.get("/authorized/tag/list", tagsController.getAll);
+
+// ConfigAgenda
+routes.get("/authorized/config/agenda", configAgendaController.getAll);
+routes.get("/authorized/config/agenda/:id", configAgendaController.get);
+routes.put("/authorized/config/agenda", configAgendaController.update);
 
 export { routes };
