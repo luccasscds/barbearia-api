@@ -74,6 +74,19 @@ var timetableDB = {
       return error;
     }
   },
+  async getActiveOrInactive(active) {
+    try {
+      const db = await createConnection();
+      const sql = `select 
+                            codTime, day, active, time01, time02, time03, time04
+                        from Timetable where active = ?;`;
+      const [result] = await db.query(sql, [active]);
+      db.end();
+      return result;
+    } catch (error) {
+      return error;
+    }
+  },
   async updateTimetable(codTime, active, time01, time02, time03, time04) {
     try {
       const db = await createConnection();

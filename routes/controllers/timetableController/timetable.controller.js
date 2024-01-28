@@ -74,6 +74,19 @@ var timetableDB = {
       return error;
     }
   },
+  async getActiveOrInactive(active) {
+    try {
+      const db = await createConnection();
+      const sql = `select 
+                            codTime, day, active, time01, time02, time03, time04
+                        from Timetable where active = ?;`;
+      const [result] = await db.query(sql, [active]);
+      db.end();
+      return result;
+    } catch (error) {
+      return error;
+    }
+  },
   async updateTimetable(codTime, active, time01, time02, time03, time04) {
     try {
       const db = await createConnection();
@@ -109,6 +122,16 @@ var timetableController = {
   async get(req, res) {
     const { id } = req.params;
     const response = await timetableDB.get(Number(id));
+    if (response.errno) {
+      res.json({ error: response });
+      return;
+    }
+    ;
+    res.json(response);
+  },
+  async getActiveOrInactive(req, res) {
+    const { id } = req.params;
+    const response = await timetableDB.getActiveOrInactive(id.toLowerCase() === "true");
     if (response.errno) {
       res.json({ error: response });
       return;
