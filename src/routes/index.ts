@@ -43,6 +43,7 @@ routes.delete("/authorized/service/:id", serviceController.delete);
 // timetable
 routes.get("/authorized/timetable/list", timetableController.getAll);
 routes.get("/authorized/timetable/:id", timetableController.get);
+routes.get("/authorized/timetable/active/:id", timetableController.getActiveOrInactive);
 routes.put("/authorized/timetable", timetableController.update);
 
 // Tags
