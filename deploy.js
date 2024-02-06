@@ -11,18 +11,16 @@ const exec = util.promisify(require('node:child_process').exec);
         await versioning();
         
         await runScript('npm run build');
-        await runScript(`git push origin --tags --no-verify`);
-        await runScript(`git push origin ${currentBranch} --no-verify`);
-        
+        await runScript(`git push origin ${currentBranch} --tags --no-verify`);
+
         const var_branch_production = 'production';
         const version = getVersion();
-        await runScript(`cd dist/`);
-        await runScript(`git init`);
-        await runScript(`git checkout -b ${var_branch_production}`);
-        await runScript(`git add -A`);
-        await runScript(`git commit -m '🚀 Deploy v${version}'`);
-        await runScript(`git push -f ${current_url_origin} ${var_branch_production} --no-verify`);
-        await runScript(`cd ..`);
+        await runScript(`cd dist/ && git init`);
+        await runScript(`cd dist/ && git checkout -B ${var_branch_production} > nul 2>&1`);
+        await runScript(`cd dist/ && git add -A > nul 2>&1`);
+        await runScript(`cd dist/ && git commit -m '🚀 Deploy v${version}'`);
+        await runScript(`cd dist/ && git push -f ${current_url_origin} ${var_branch_production} --no-verify`);
+        // await runScript(`cd ..`);
 
         console.log('Done 🎉');
     } catch (error) {
@@ -37,11 +35,15 @@ const exec = util.promisify(require('node:child_process').exec);
 
 async function runScript(command = '') {
     try {
+        console.log('command: ', command);
         if(!command) throw 'parâmetro vazio';
 
         const { stderr, stdout } = await exec(command);
     
-        if(stderr && !stderr.includes('Compiled with warnings')) throw stderr;
+        if( stderr && 
+            !stderr.includes('Compiled with warnings')) {
+            throw stderr;
+        };
         return stdout;
     } catch (error) {
         throw error;
