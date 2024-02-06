@@ -34,6 +34,7 @@ __export(routes_exports, {
 });
 module.exports = __toCommonJS(routes_exports);
 var import_express = __toESM(require("express"));
+var import_multer = __toESM(require("multer"));
 
 // src/db/clientDB.ts
 var import_zod = require("zod");
@@ -260,6 +261,7 @@ var eventDB = {
   },
   async getEventByClient(codClient) {
     try {
+      const defaultDay = 15;
       const db = await createConnection();
       const sql = `select 
                         distinct vl.dateVirtual, vl.startTime, vl.endTime,
@@ -292,8 +294,9 @@ var eventDB = {
                         ) total
                     from VirtualLine vl
                     where vl.codClient = ?
+                    and vl.dateVirtual >= DATE_SUB(current_date, INTERVAL ? DAY)
                     order by vl.dateVirtual desc, vl.startTime desc;`;
-      const [result] = await db.query(sql, [codClient]);
+      const [result] = await db.query(sql, [codClient, defaultDay]);
       db.end();
       return result;
     } catch (error) {
@@ -913,7 +916,72 @@ var configAgendaController = {
   }
 };
 
+// src/db/companyDB.ts
+var companyDB = {
+  async get(id) {
+    try {
+      const db = await createConnection();
+      const sql = `select codCompany, name, photo, numberWhatsApp, nameInstagram, address from Company
+                        where codCompany = ?;`;
+      const [result] = await db.query(sql, [id]);
+      db.end();
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+  async update(newCompany) {
+    try {
+      const { name, photo, numberWhatsApp, nameInstagram, address, codCompany } = newCompany;
+      const db = await createConnection();
+      const sql = `   UPDATE Company SET 
+                            name = ?,
+                            photo = ?,
+                            numberWhatsApp = ?,
+                            nameInstagram = ?,
+                            address = ?
+                            WHERE codCompany = ?;`;
+      const [result] = await db.query(sql, [name, photo, numberWhatsApp, nameInstagram, address, codCompany]);
+      db.commit();
+      db.end();
+      return result;
+    } catch (error) {
+      throw error;
+    }
+    ;
+  }
+};
+
+// src/routes/controllers/companyController/companyController.ts
+var companyController = {
+  async get(req, res) {
+    const { id } = req.params;
+    const response = await companyDB.get(id);
+    if (response.errno) {
+      res.json({ error: response });
+      return;
+    }
+    ;
+    res.json(response);
+  },
+  async update(req, res) {
+    try {
+      const { name, photo, numberWhatsApp, nameInstagram, address, codCompany } = req.body;
+      const response = await companyDB.update({ name, photo, numberWhatsApp, nameInstagram, address, codCompany });
+      if (response.errno) {
+        res.json({ error: response });
+        return;
+      }
+      ;
+      res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
+    } catch (error) {
+      res.json({ error });
+    }
+  }
+};
+
 // src/routes/index.ts
+var upload = (0, import_multer.default)({ dest: "uploads/" });
 var routes = import_express.default.Router();
 routes.get("/", async (_, res) => res.send("Bem vindo :)"));
 routes.post("/signIn", authController.signIn);
@@ -944,6 +1012,8 @@ routes.get("/authorized/tag/list", tagsController.getAll);
 routes.get("/authorized/config/agenda", configAgendaController.getAll);
 routes.get("/authorized/config/agenda/:id", configAgendaController.get);
 routes.put("/authorized/config/agenda", configAgendaController.update);
+routes.get("/authorized/company/:id", companyController.get);
+routes.put("/authorized/company", upload.single("photo"), companyController.update);
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   routes
