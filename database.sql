@@ -53,6 +53,15 @@ CREATE TABLE Status (
   codStatus INT PRIMARY KEY,
   name VARCHAR(50) NOT NULL
 );
+/
+CREATE TABLE Company (
+  codCompany      INT PRIMARY KEY AUTO_INCREMENT,
+  name            VARCHAR(100),
+  photo           MEDIUMTEXT,
+  numberWhatsApp  VARCHAR(11),
+  nameInstagram   VARCHAR(50),
+  address         VARCHAR(100)
+);
 
 
 -- INSERTS
@@ -122,3 +131,5 @@ INSERT INTO Status (codStatus, name) VALUES
 (7, 'Pagou a taxa'),
 (8, 'Pago');
 /
+INSERT INTO Company (name, photo, numberWhatsApp, nameInstagram, address) VALUES
+('💈Franskym Santos💈', 'https://d118if3nwdjtgn.cloudfront.net/487248/PAGE_BIO_IMAGE/-1075275270', '5586998350894', 'franskym_santos', '');

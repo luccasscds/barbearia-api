@@ -57,6 +57,8 @@ export const eventDB = {
     },
     async getEventByClient(codClient: number): Promise<any> {
         try {
+            const defaultDay = 15;
+
             const db = await createConnection();
             const sql = `select 
                         distinct vl.dateVirtual, vl.startTime, vl.endTime,
@@ -89,8 +91,9 @@ export const eventDB = {
                         ) total
                     from VirtualLine vl
                     where vl.codClient = ?
+                    and vl.dateVirtual >= DATE_SUB(current_date, INTERVAL ? DAY)
                     order by vl.dateVirtual desc, vl.startTime desc;`;
-            const [result] = await db.query(sql, [codClient]);
+            const [result] = await db.query(sql, [codClient, defaultDay]);
     
             db.end();
             return result;

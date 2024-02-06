@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import { clientController } from './controllers/clientController/client.controller';
 import { eventController } from './controllers/eventController/event.controller';
 import { serviceController } from './controllers/serviceController/service.controller';
@@ -6,7 +7,9 @@ import { timetableController } from './controllers/timetableController/timetable
 import { authController } from './controllers/authController';
 import { tagsController } from './controllers/tagsController/tagsController';
 import { configAgendaController } from './controllers/configAgendaController/configAgendaController';
+import { companyController } from './controllers/companyController/companyController';
 
+const upload = multer({ dest: 'uploads/' });
 const routes = express.Router();
 
 routes.get("/", async (_, res) => res.send('Bem vindo :)') );
@@ -53,5 +56,9 @@ routes.get("/authorized/tag/list", tagsController.getAll);
 routes.get("/authorized/config/agenda", configAgendaController.getAll);
 routes.get("/authorized/config/agenda/:id", configAgendaController.get);
 routes.put("/authorized/config/agenda", configAgendaController.update);
+
+// Company
+routes.get("/authorized/company/:id", companyController.get);
+routes.put("/authorized/company", upload.single('photo'), companyController.update);
 
 export { routes };
