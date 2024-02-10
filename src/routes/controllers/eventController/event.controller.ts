@@ -35,21 +35,18 @@ export const eventController = {
     },
     async create(req: Request, res: Response) {
         try {
-            const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = req.body;
-            
             const EventSchema = z.object({            
                 codClient: z.number(),
                 codService: z.number(),
                 codStatus: z.number(),
                 dateVirtual: z.string().regex(/^\d{4}-\d{2}-\d{2}$/g, 'O formato Data esperado é YYYY-MM-DD'),
-                startTime: z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, 'O formato Hora esperado é HH:mm ou HH:mm:ss'),
-                endTime: z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, 'O formato Hora esperado é HH:mm ou HH:mm:ss'),
+                startTime: z.string().regex(/^(\d{2}:\d{2}:\d{2})|(\d{2}:\d{2})$/, 'O formato Hora esperado é HH:mm ou HH:mm:ss'),
+                endTime: z.string().regex(/^(\d{2}:\d{2}:\d{2})|(\d{2}:\d{2})$/, 'O formato Hora esperado é HH:mm ou HH:mm:ss'),
+                codPayment: z.number(),
             });
-            EventSchema.parse({ codClient, codService, codStatus, dateVirtual, startTime, endTime });
+            EventSchema.parse(req.body);
     
-            const response = await eventDB.createEvent({
-                codClient, codService, codStatus, dateVirtual, startTime, endTime
-            });
+            const response = await eventDB.createEvent(req.body);
     
             if(response.errno) {
                 res.json({ error: response });
@@ -63,22 +60,19 @@ export const eventController = {
     },
     async update(req: Request, res: Response) {
         try {
-            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = req.body;
-    
             const EventSchema = z.object({            
                 codClient: z.number(),
                 codService: z.number(),
                 codStatus: z.number(),
                 dateVirtual: z.string().regex(/^\d{4}-\d{2}-\d{2}$/g, 'O formato Data esperado é YYYY-MM-DD'),
-                startTime: z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, 'O formato Hora esperado é HH:mm ou HH:mm:ss'),
-                endTime: z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, 'O formato Hora esperado é HH:mm ou HH:mm:ss'),
+                startTime: z.string().regex(/^(\d{2}:\d{2}:\d{2})|(\d{2}:\d{2})$/, 'O formato Hora esperado é HH:mm ou HH:mm:ss'),
+                endTime: z.string().regex(/^(\d{2}:\d{2}:\d{2})|(\d{2}:\d{2})$/, 'O formato Hora esperado é HH:mm ou HH:mm:ss'),
                 codVirtual: z.number(),
+                codPayment: z.number(),
             });
-            EventSchema.parse({ codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual });
+            EventSchema.parse(req.body);
     
-            const response = await eventDB.updateEvent({
-                codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual
-            });
+            const response = await eventDB.updateEvent(req.body);
     
             if(response.errno) {
                 res.json({ error: response });
@@ -91,17 +85,15 @@ export const eventController = {
         }
     },
     async delete(req: Request, res: Response) {
-        try {
-            const { codClient, dateVirtual, startTime } = req.body;
-    
+        try {    
             const EventSchema = z.object({            
                 codClient: z.number(),
                 dateVirtual: z.string().regex(/^\d{4}-\d{2}-\d{2}$/g, 'O formato Data esperado é YYYY-MM-DD'),
-                startTime: z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, 'O formato Hora esperado é HH:mm ou HH:mm:ss'),
+                startTime: z.string().regex(/^(\d{2}:\d{2}:\d{2})|(\d{2}:\d{2})$/, 'O formato Hora esperado é HH:mm ou HH:mm:ss'),
             });
-            EventSchema.parse({ codClient, dateVirtual, startTime });
+            EventSchema.parse(req.body);
     
-            const response = await eventDB.deleteEvent(codClient, dateVirtual, startTime);
+            const response = await eventDB.deleteEvent(req.body);
             
             if(response.errno) {
                 res.json({ error: response });

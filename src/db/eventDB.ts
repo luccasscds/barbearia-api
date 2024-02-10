@@ -44,7 +44,9 @@ export const eventDB = {
                                     and v.dateVirtual = vl.dateVirtual
                                     and v.startTime = vl.startTime
                                 )
-                            ) total
+                            ) total,
+                            vl.codPayment,
+                            (select name from PaymentMethod where codPay = vl.codPayment) desPayment
                         from VirtualLine vl
                         where vl.dateVirtual = ?;`;
             const [result] = await db.query(sql, [date]);
@@ -115,13 +117,13 @@ export const eventDB = {
     },
     async createEvent(newEvent: IParamsCreateEvent): Promise<IResponseDB> {
         try {
-            const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = newEvent;
+            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment } = newEvent;
             const db = await createConnection();
             const sql = `INSERT INTO VirtualLine 
-                            (codClient, codService, codStatus, dateVirtual, startTime, endTime)
+                            (codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment)
                         VALUES 
-                            (?, ?, ?, ?, ?, ?);`;
-            const [result] = await db.query(sql, [codClient, codService, (codStatus ?? 1), dateVirtual, startTime, endTime]);
+                            (?, ?, ?, ?, ?, ?, ?);`;
+            const [result] = await db.query(sql, [codClient, codService, (codStatus ?? 1), dateVirtual, startTime, endTime, codPayment]);
     
             db.end();
             return result as any;
@@ -131,7 +133,7 @@ export const eventDB = {
     },
     async updateEvent(newEvent: IParamsUpdateEvent): Promise<IResponseDB> {
         try {
-            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = newEvent;
+            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual } = newEvent;
             const db = await createConnection();
             const sql = `UPDATE VirtualLine SET
                             codClient = ?,
@@ -139,9 +141,10 @@ export const eventDB = {
                             codStatus = ?,
                             dateVirtual = ?,
                             startTime = ?,
-                            endTime = ?
+                            endTime = ?,
+                            codPayment = ?
                         WHERE codVirtual = ?;`;
-            const [result] = await db.query(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual]);
+            const [result] = await db.query(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual]);
     
             db.end();
             return result as any;
@@ -149,8 +152,10 @@ export const eventDB = {
             return error as any;
         }
     },
-    async deleteEvent(codClient: number, dateVirtual: string, startTime: string): Promise<IResponseDB> {
+    async deleteEvent(newEvent: IParamsDeleteEvent): Promise<IResponseDB> {
         try {
+            const { codClient, dateVirtual, startTime } = newEvent;
+
             const db = await createConnection();
             const sql = `DELETE FROM VirtualLine 
                         WHERE codClient = ?
@@ -183,6 +188,7 @@ interface IParamsCreateEvent {
     codClient: number,
     codService: number,
     codStatus: number,
+    codPayment: number,
     dateVirtual: string,
     startTime: string,
     endTime: string,
@@ -196,4 +202,11 @@ interface IParamsUpdateEvent {
     startTime: string,
     endTime: string,
     codVirtual: string,
+    codPayment: number,
+};
+
+interface IParamsDeleteEvent {
+    codClient: number,
+    dateVirtual: string,
+    startTime: string,
 };

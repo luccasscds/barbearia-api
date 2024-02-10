@@ -27,6 +27,7 @@ CREATE TABLE VirtualLine (
     codClient           INT NOT NULL,
     codService          INT NOT NULL,
     codStatus           INT NOT NULL,
+    codPayment          INT,
     dateVirtual         DATETIME NOT NULL,
     startTime           TIME NOT NULL,
     endTime             TIME NOT NULL,
@@ -62,7 +63,11 @@ CREATE TABLE Company (
   nameInstagram   VARCHAR(50),
   address         VARCHAR(100)
 );
-
+/
+CREATE TABLE PaymentMethod (
+  codPay INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(50) NOT NULL
+);
 
 -- INSERTS
 
@@ -133,3 +138,13 @@ INSERT INTO Status (codStatus, name) VALUES
 /
 INSERT INTO Company (name, photo, numberWhatsApp, nameInstagram, address) VALUES
 ('💈Franskym Santos💈', 'https://d118if3nwdjtgn.cloudfront.net/487248/PAGE_BIO_IMAGE/-1075275270', '5586998350894', 'franskym_santos', '');
+/
+INSERT INTO PaymentMethod (name) VALUES
+('Nenhum'),
+('Dinheiro'),
+('Transferência/PIX'),
+('Cartão de Crédito'),
+('Cartão de Débito'),
+('Cheque'),
+('Cortesia');
+/

@@ -8,14 +8,18 @@ import { authController } from './controllers/authController';
 import { tagsController } from './controllers/tagsController/tagsController';
 import { configAgendaController } from './controllers/configAgendaController/configAgendaController';
 import { companyController } from './controllers/companyController/companyController';
+import { paymentMethodController } from './controllers/paymentMethodController/paymentMethodController';
 
 const upload = multer({ dest: 'uploads/' });
 const routes = express.Router();
+
+// routes no authorized
 
 routes.get("/", async (_, res) => res.send('Bem vindo :)') );
 
 routes.post("/signIn", authController.signIn);
 routes.post("/signUp", authController.signUp);
+
 
 // routes authorized
 
@@ -60,5 +64,8 @@ routes.put("/authorized/config/agenda", configAgendaController.update);
 // Company
 routes.get("/authorized/company/:id", companyController.get);
 routes.put("/authorized/company", upload.single('photo'), companyController.update);
+
+// Payment Method
+routes.get("/authorized/paymentMethod/list", paymentMethodController.getALl);
 
 export { routes };
