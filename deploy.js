@@ -1,5 +1,7 @@
-const util = require('node:util');
-const exec = util.promisify(require('node:child_process').exec);
+// ------------------------
+//      SPEC FUNCTIONS
+// ------------------------
+const showMessage = showMessageFunc();
 
 // ------------------------
 //      MAIN
@@ -7,7 +9,7 @@ const exec = util.promisify(require('node:child_process').exec);
 (async () => {
     try {
         const current_url_origin = await runScript('git remote get-url origin');
-        const currentBranch = (await runScript("git branch --show-current")).replace(/\n/g, '');
+        const currentBranch = await runScript("git branch --show-current");
         await versioning();
         
         await runScript('npm run build');
@@ -16,77 +18,79 @@ const exec = util.promisify(require('node:child_process').exec);
         const var_branch_production = 'production';
         const version = getVersion();
         await runScript(`cd dist/ && git init`);
-        await runScript(`cd dist/ && git checkout -B ${var_branch_production} > nul 2>&1`);
-        await runScript(`cd dist/ && git add -A > nul 2>&1`);
-        await runScript(`cd dist/ && git commit -m '🚀 Deploy v${version}'`);
+        await runScript(`cd dist/ && git checkout -B ${var_branch_production}`);
+        await runScript(`cd dist/ && git add -A`);
+        await runScript(`cd dist/ && git commit -m "🚀 Deploy v${version}"`);
         await runScript(`cd dist/ && git push -f ${current_url_origin} ${var_branch_production} --no-verify`);
-        // await runScript(`cd ..`);
 
-        console.log('Done 🎉');
+        showMessage.success('Done 🎉');
     } catch (error) {
-        console.error(error);
+        showMessage.error('Error: ', error);
     };
 })()
 
 
 // ------------------------
-//      FUNCTIONS
+//      BODY FUNCTIONS
 // ------------------------
 
 async function runScript(command = '') {
+    const util = require('node:util');
+    const exec = util.promisify(require('node:child_process').exec);
+
     try {
-        console.log('command: ', command);
+        showMessage.info(`command: ${command}`);
+
         if(!command) throw 'parâmetro vazio';
 
         const { stderr, stdout } = await exec(command);
-    
-        if( stderr && 
-            !stderr.includes('Compiled with warnings')) {
+
+        if( stderr && stderr.toLowerCase().includes('erro') ) {
             throw stderr;
         };
-        return stdout;
+        return stdout.replace(/\n/g, '');
     } catch (error) {
         throw error;
     }
 };
 
-async function versioning() {
+async function versioning(currentBranch = '') {
     try {
         const version = getVersion();
         const allAreNumberNineRegExp = /^9+$/;
         const [first, second, third] = version.split('.');
-        const currentBranch = await runScript("git branch --show-current");
+        currentBranch = currentBranch || await runScript("git branch --show-current");
         
-        if(currentBranch === 'main\n') {
+        if(currentBranch === 'main') {
             if(allAreNumberNineRegExp.test(second)) {
                 // v1.0.0
                 const newVersion = await runScript("npm version major -m 'v%s'");
-                console.log(`v${version} >> ${newVersion}`);
+                showMessage.success(`v${version} >> ${newVersion}`);
 
             } else if(allAreNumberNineRegExp.test(third)) {
                 // v0.1.0
                 const newVersion = await runScript("npm version minor -m 'v%s'");
-                console.log(`v${version} >> ${newVersion}`);
+                showMessage.success(`v${version} >> ${newVersion}`);
 
             } else {
                 // v0.0.1
                 const newVersion = await runScript("npm version patch -m 'v%s'");
-                console.log(`v${version} >> ${newVersion}`);
+                showMessage.success(`v${version} >> ${newVersion}`);
 
             }
-        } else {
+        } else if(currentBranch === 'SEM_BRANCH_MOMENTO') {
             // v1.0.0-1
             const newVersion = await runScript("npm version prerelease -m 'v%s'");
-            console.log(`v${version} >> ${newVersion}`);
+            showMessage.success(`v${version} >> ${newVersion}`);
             
             // $ npm version premajor
             // v1.0.0-0
 
             // npm version preminor
-            // v1.1.0-0
+            // v0.1.0-0
 
             // npm version prepatch
-            // v1.1.1-0
+            // v0.0.1-0
         };
     } catch (error) {
         throw error;
@@ -95,4 +99,53 @@ async function versioning() {
 
 function getVersion() {
     return require('./package.json').version;
+};
+
+function showMessageFunc() {
+    return {
+        success(text) {
+            console.log('\x1b[32m%s\x1b[0m', text);
+        },
+        warning(text) {
+            console.log('\x1b[33m%s\x1b[0m', text);
+        },
+        error(text) {
+            console.log('\x1b[31m%s\x1b[0m', text);
+        },
+        info(text) {
+            console.log('\x1b[34m%s\x1b[0m', text);
+        },
+    }
+
+    // Colors reference
+
+    // Reset = "\x1b[0m"
+    // Bright = "\x1b[1m"
+    // Dim = "\x1b[2m"
+    // Underscore = "\x1b[4m"
+    // Blink = "\x1b[5m"
+    // Reverse = "\x1b[7m"
+    // Hidden = "\x1b[8m"
+
+    // # Text color
+    // FgBlack = "\x1b[30m"
+    // FgRed = "\x1b[31m"
+    // FgGreen = "\x1b[32m"
+    // FgYellow = "\x1b[33m"
+    // FgBlue = "\x1b[34m"
+    // FgMagenta = "\x1b[35m"
+    // FgCyan = "\x1b[36m"
+    // FgWhite = "\x1b[37m"
+    // FgGray = "\x1b[90m"
+
+    // # Background color
+    // BgBlack = "\x1b[40m"
+    // BgRed = "\x1b[41m"
+    // BgGreen = "\x1b[42m"
+    // BgYellow = "\x1b[43m"
+    // BgBlue = "\x1b[44m"
+    // BgMagenta = "\x1b[45m"
+    // BgCyan = "\x1b[46m"
+    // BgWhite = "\x1b[47m"
+    // BgGray = "\x1b[100m"
 };
