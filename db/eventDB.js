@@ -90,7 +90,9 @@ var eventDB = {
                                     and v.dateVirtual = vl.dateVirtual
                                     and v.startTime = vl.startTime
                                 )
-                            ) total
+                            ) total,
+                            vl.codPayment,
+                            (select name from PaymentMethod where codPay = vl.codPayment) desPayment
                         from VirtualLine vl
                         where vl.dateVirtual = ?;`;
       const [result] = await db.query(sql, [date]);
@@ -157,13 +159,13 @@ var eventDB = {
   },
   async createEvent(newEvent) {
     try {
-      const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = newEvent;
+      const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment } = newEvent;
       const db = await createConnection();
       const sql = `INSERT INTO VirtualLine 
-                            (codClient, codService, codStatus, dateVirtual, startTime, endTime)
+                            (codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment)
                         VALUES 
-                            (?, ?, ?, ?, ?, ?);`;
-      const [result] = await db.query(sql, [codClient, codService, codStatus ?? 1, dateVirtual, startTime, endTime]);
+                            (?, ?, ?, ?, ?, ?, ?);`;
+      const [result] = await db.query(sql, [codClient, codService, codStatus ?? 1, dateVirtual, startTime, endTime, codPayment]);
       db.end();
       return result;
     } catch (error) {
@@ -172,7 +174,7 @@ var eventDB = {
   },
   async updateEvent(newEvent) {
     try {
-      const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = newEvent;
+      const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual } = newEvent;
       const db = await createConnection();
       const sql = `UPDATE VirtualLine SET
                             codClient = ?,
@@ -180,17 +182,19 @@ var eventDB = {
                             codStatus = ?,
                             dateVirtual = ?,
                             startTime = ?,
-                            endTime = ?
+                            endTime = ?,
+                            codPayment = ?
                         WHERE codVirtual = ?;`;
-      const [result] = await db.query(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual]);
+      const [result] = await db.query(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual]);
       db.end();
       return result;
     } catch (error) {
       return error;
     }
   },
-  async deleteEvent(codClient, dateVirtual, startTime) {
+  async deleteEvent(newEvent) {
     try {
+      const { codClient, dateVirtual, startTime } = newEvent;
       const db = await createConnection();
       const sql = `DELETE FROM VirtualLine 
                         WHERE codClient = ?

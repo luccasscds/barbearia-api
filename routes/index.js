@@ -249,7 +249,9 @@ var eventDB = {
                                     and v.dateVirtual = vl.dateVirtual
                                     and v.startTime = vl.startTime
                                 )
-                            ) total
+                            ) total,
+                            vl.codPayment,
+                            (select name from PaymentMethod where codPay = vl.codPayment) desPayment
                         from VirtualLine vl
                         where vl.dateVirtual = ?;`;
       const [result] = await db.query(sql, [date]);
@@ -316,13 +318,13 @@ var eventDB = {
   },
   async createEvent(newEvent) {
     try {
-      const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = newEvent;
+      const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment } = newEvent;
       const db = await createConnection();
       const sql = `INSERT INTO VirtualLine 
-                            (codClient, codService, codStatus, dateVirtual, startTime, endTime)
+                            (codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment)
                         VALUES 
-                            (?, ?, ?, ?, ?, ?);`;
-      const [result] = await db.query(sql, [codClient, codService, codStatus ?? 1, dateVirtual, startTime, endTime]);
+                            (?, ?, ?, ?, ?, ?, ?);`;
+      const [result] = await db.query(sql, [codClient, codService, codStatus ?? 1, dateVirtual, startTime, endTime, codPayment]);
       db.end();
       return result;
     } catch (error) {
@@ -331,7 +333,7 @@ var eventDB = {
   },
   async updateEvent(newEvent) {
     try {
-      const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = newEvent;
+      const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual } = newEvent;
       const db = await createConnection();
       const sql = `UPDATE VirtualLine SET
                             codClient = ?,
@@ -339,17 +341,19 @@ var eventDB = {
                             codStatus = ?,
                             dateVirtual = ?,
                             startTime = ?,
-                            endTime = ?
+                            endTime = ?,
+                            codPayment = ?
                         WHERE codVirtual = ?;`;
-      const [result] = await db.query(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual]);
+      const [result] = await db.query(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual]);
       db.end();
       return result;
     } catch (error) {
       return error;
     }
   },
-  async deleteEvent(codClient, dateVirtual, startTime) {
+  async deleteEvent(newEvent) {
     try {
+      const { codClient, dateVirtual, startTime } = newEvent;
       const db = await createConnection();
       const sql = `DELETE FROM VirtualLine 
                         WHERE codClient = ?
@@ -411,24 +415,17 @@ var eventController = {
   },
   async create(req, res) {
     try {
-      const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = req.body;
       const EventSchema = import_zod2.z.object({
         codClient: import_zod2.z.number(),
         codService: import_zod2.z.number(),
         codStatus: import_zod2.z.number(),
         dateVirtual: import_zod2.z.string().regex(/^\d{4}-\d{2}-\d{2}$/g, "O formato Data esperado \xE9 YYYY-MM-DD"),
-        startTime: import_zod2.z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss"),
-        endTime: import_zod2.z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss")
+        startTime: import_zod2.z.string().regex(/^(\d{2}:\d{2}:\d{2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss"),
+        endTime: import_zod2.z.string().regex(/^(\d{2}:\d{2}:\d{2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss"),
+        codPayment: import_zod2.z.number()
       });
-      EventSchema.parse({ codClient, codService, codStatus, dateVirtual, startTime, endTime });
-      const response = await eventDB.createEvent({
-        codClient,
-        codService,
-        codStatus,
-        dateVirtual,
-        startTime,
-        endTime
-      });
+      EventSchema.parse(req.body);
+      const response = await eventDB.createEvent(req.body);
       if (response.errno) {
         res.json({ error: response });
         return;
@@ -443,26 +440,18 @@ var eventController = {
   },
   async update(req, res) {
     try {
-      const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = req.body;
       const EventSchema = import_zod2.z.object({
         codClient: import_zod2.z.number(),
         codService: import_zod2.z.number(),
         codStatus: import_zod2.z.number(),
         dateVirtual: import_zod2.z.string().regex(/^\d{4}-\d{2}-\d{2}$/g, "O formato Data esperado \xE9 YYYY-MM-DD"),
-        startTime: import_zod2.z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss"),
-        endTime: import_zod2.z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss"),
-        codVirtual: import_zod2.z.number()
+        startTime: import_zod2.z.string().regex(/^(\d{2}:\d{2}:\d{2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss"),
+        endTime: import_zod2.z.string().regex(/^(\d{2}:\d{2}:\d{2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss"),
+        codVirtual: import_zod2.z.number(),
+        codPayment: import_zod2.z.number()
       });
-      EventSchema.parse({ codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual });
-      const response = await eventDB.updateEvent({
-        codClient,
-        codService,
-        codStatus,
-        dateVirtual,
-        startTime,
-        endTime,
-        codVirtual
-      });
+      EventSchema.parse(req.body);
+      const response = await eventDB.updateEvent(req.body);
       if (response.errno) {
         res.json({ error: response });
         return;
@@ -477,14 +466,13 @@ var eventController = {
   },
   async delete(req, res) {
     try {
-      const { codClient, dateVirtual, startTime } = req.body;
       const EventSchema = import_zod2.z.object({
         codClient: import_zod2.z.number(),
         dateVirtual: import_zod2.z.string().regex(/^\d{4}-\d{2}-\d{2}$/g, "O formato Data esperado \xE9 YYYY-MM-DD"),
-        startTime: import_zod2.z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss")
+        startTime: import_zod2.z.string().regex(/^(\d{2}:\d{2}:\d{2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss")
       });
-      EventSchema.parse({ codClient, dateVirtual, startTime });
-      const response = await eventDB.deleteEvent(codClient, dateVirtual, startTime);
+      EventSchema.parse(req.body);
+      const response = await eventDB.deleteEvent(req.body);
       if (response.errno) {
         res.json({ error: response });
         return;
@@ -1024,6 +1012,40 @@ var companyController = {
   }
 };
 
+// src/db/paymentMethodDB.ts
+var paymentMethodDB = {
+  async getAll() {
+    try {
+      const db = await createConnection();
+      const sql = `select codPay, name from PaymentMethod;`;
+      const [result] = await db.query(sql, []);
+      db.end();
+      return result;
+    } catch (error) {
+      return error;
+    }
+  }
+};
+
+// src/routes/controllers/paymentMethodController/paymentMethodController.ts
+var paymentMethodController = {
+  async getALl(req, res) {
+    try {
+      const response = await paymentMethodDB.getAll();
+      if (response.errno) {
+        res.json({ error: response });
+        return;
+      }
+      ;
+      res.json(response);
+    } catch (error) {
+      if (error?.issues)
+        error = error.issues[0];
+      res.json({ error });
+    }
+  }
+};
+
 // src/routes/index.ts
 var upload = (0, import_multer.default)({ dest: "uploads/" });
 var routes = import_express.default.Router();
@@ -1058,6 +1080,7 @@ routes.get("/authorized/config/agenda/:id", configAgendaController.get);
 routes.put("/authorized/config/agenda", configAgendaController.update);
 routes.get("/authorized/company/:id", companyController.get);
 routes.put("/authorized/company", upload.single("photo"), companyController.update);
+routes.get("/authorized/paymentMethod/list", paymentMethodController.getALl);
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   routes
