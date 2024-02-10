@@ -218,6 +218,7 @@ var eventDB = {
 };
 
 // src/routes/controllers/eventController/event.controller.ts
+var import_zod = require("zod");
 var eventController = {
   async get(req, res) {
     const { date } = req.params;
@@ -250,49 +251,92 @@ var eventController = {
     res.json(response);
   },
   async create(req, res) {
-    const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = req.body;
-    const response = await eventDB.createEvent({
-      codClient,
-      codService,
-      codStatus,
-      dateVirtual,
-      startTime,
-      endTime
-    });
-    if (response.errno) {
-      res.json({ error: response });
-      return;
+    try {
+      const { codClient, codService, codStatus, dateVirtual, startTime, endTime } = req.body;
+      const EventSchema = import_zod.z.object({
+        codClient: import_zod.z.number(),
+        codService: import_zod.z.number(),
+        codStatus: import_zod.z.number(),
+        dateVirtual: import_zod.z.string().regex(/^\d{4}-\d{2}-\d{2}$/g, "O formato Data esperado \xE9 YYYY-MM-DD"),
+        startTime: import_zod.z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss"),
+        endTime: import_zod.z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss")
+      });
+      EventSchema.parse({ codClient, codService, codStatus, dateVirtual, startTime, endTime });
+      const response = await eventDB.createEvent({
+        codClient,
+        codService,
+        codStatus,
+        dateVirtual,
+        startTime,
+        endTime
+      });
+      if (response.errno) {
+        res.json({ error: response });
+        return;
+      }
+      ;
+      res.status(201).json({ message: `Registro criado ID: ${response.insertId}` });
+    } catch (error) {
+      if (error?.issues)
+        error = error.issues[0];
+      res.json({ error });
     }
-    ;
-    res.status(201).json({ message: `Registro criado ID: ${response.insertId}` });
   },
   async update(req, res) {
-    const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = req.body;
-    const response = await eventDB.updateEvent({
-      codClient,
-      codService,
-      codStatus,
-      dateVirtual,
-      startTime,
-      endTime,
-      codVirtual
-    });
-    if (response.errno) {
-      res.json({ error: response });
-      return;
+    try {
+      const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual } = req.body;
+      const EventSchema = import_zod.z.object({
+        codClient: import_zod.z.number(),
+        codService: import_zod.z.number(),
+        codStatus: import_zod.z.number(),
+        dateVirtual: import_zod.z.string().regex(/^\d{4}-\d{2}-\d{2}$/g, "O formato Data esperado \xE9 YYYY-MM-DD"),
+        startTime: import_zod.z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss"),
+        endTime: import_zod.z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss"),
+        codVirtual: import_zod.z.number()
+      });
+      EventSchema.parse({ codClient, codService, codStatus, dateVirtual, startTime, endTime, codVirtual });
+      const response = await eventDB.updateEvent({
+        codClient,
+        codService,
+        codStatus,
+        dateVirtual,
+        startTime,
+        endTime,
+        codVirtual
+      });
+      if (response.errno) {
+        res.json({ error: response });
+        return;
+      }
+      ;
+      res.status(200).json({ message: `Registro atualizado ID: ${response.affectedRows}` });
+    } catch (error) {
+      if (error?.issues)
+        error = error.issues[0];
+      res.json({ error });
     }
-    ;
-    res.status(200).json({ message: `Registro atualizado ID: ${response.affectedRows}` });
   },
   async delete(req, res) {
-    const { codClient, dateVirtual, startTime } = req.body;
-    const response = await eventDB.deleteEvent(codClient, dateVirtual, startTime);
-    if (response.errno) {
-      res.json({ error: response });
-      return;
+    try {
+      const { codClient, dateVirtual, startTime } = req.body;
+      const EventSchema = import_zod.z.object({
+        codClient: import_zod.z.number(),
+        dateVirtual: import_zod.z.string().regex(/^\d{4}-\d{2}-\d{2}$/g, "O formato Data esperado \xE9 YYYY-MM-DD"),
+        startTime: import_zod.z.string().regex(/^(\d{2}:\d{2}:\d{0,2})|(\d{2}:\d{2})$/, "O formato Hora esperado \xE9 HH:mm ou HH:mm:ss")
+      });
+      EventSchema.parse({ codClient, dateVirtual, startTime });
+      const response = await eventDB.deleteEvent(codClient, dateVirtual, startTime);
+      if (response.errno) {
+        res.json({ error: response });
+        return;
+      }
+      ;
+      res.status(200).json({ message: `${response.affectedRows} registro(s) deletado(s)` });
+    } catch (error) {
+      if (error?.issues)
+        error = error.issues[0];
+      res.json({ error });
     }
-    ;
-    res.status(200).json({ message: `${response.affectedRows} registro(s) deletado(s)` });
   },
   async deleteIn(req, res) {
     const { codVirtual } = req.body;
