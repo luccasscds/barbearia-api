@@ -45,6 +45,15 @@ export const eventDB = {
                                     and v.startTime = vl.startTime
                                 )
                             ) total,
+                            (
+                                select identificationColor from Service where codService = (
+                                    select MAX(v.codService)
+                                    from VirtualLine v
+                                    where v.codClient = vl.codClient
+                                    and v.dateVirtual = vl.dateVirtual
+                                    and v.startTime = vl.startTime
+                                )
+                            ) identificationColor,
                             vl.codPayment,
                             (select name from PaymentMethod where codPay = vl.codPayment) desPayment
                         from VirtualLine vl

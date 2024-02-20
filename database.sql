@@ -9,11 +9,12 @@ CREATE TABLE Client (
 );
 /
 CREATE TABLE Service (
-    codService  INT PRIMARY KEY AUTO_INCREMENT,
-    nameService VARCHAR(50) NOT NULL,
-    price       FLOAT(10, 2) NOT NULL,
-    durationMin INT NOT NULL,
-    active      BOOLEAN NOT NULL,
+    codService          INT PRIMARY KEY AUTO_INCREMENT,
+    nameService         VARCHAR(50) NOT NULL,
+    price               FLOAT(10, 2) NOT NULL,
+    durationMin         INT NOT NULL,
+    active              BOOLEAN NOT NULL,
+    identificationColor VARCHAR(10),
 );
 /
 -- CREATE TABLE ClientService (

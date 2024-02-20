@@ -6,7 +6,7 @@ export const serviceDB = {
         try {
             const db = await createConnection();
             const sql = `select 
-                            codService, nameService, price, durationMin, active
+                            codService, nameService, price, durationMin, active, identificationColor
                         from Service;`;
             const [result] = await db.query(sql);
     
@@ -47,15 +47,16 @@ export const serviceDB = {
     },
     async update(newService: IParamsUpdateService): Promise<IResponseDB> {
         try {
-            const { nameService, price, durationMin, active, codService } = newService;
+            const { nameService, price, durationMin, active, identificationColor, codService } = newService;
             const db = await createConnection();
             const sql = `UPDATE Service SET
                             nameService = ?,
                             price = ?,
                             durationMin = ?,
-                            active = ?
+                            active = ?,
+                            identificationColor = ?
                         WHERE codService = ?`;
-            const [result] = await db.query(sql, [nameService, price, durationMin, active, codService]);
+            const [result] = await db.query(sql, [nameService, price, durationMin, active, identificationColor, codService]);
     
             db.commit();
             db.end();
@@ -66,11 +67,11 @@ export const serviceDB = {
     },
     async create(newService: IParamsNewService): Promise<IResponseDB> {
         try {
-            const { nameService, price, durationMin } = newService;
+            const { nameService, price, durationMin, identificationColor } = newService;
             const db = await createConnection();
-            const sql = `INSERT INTO Service (nameService, price, durationMin, active) VALUES 
-                        (?, ?, ?, true);`;
-            const [result] = await db.query(sql, [nameService, price, durationMin]);
+            const sql = `INSERT INTO Service (nameService, price, durationMin, active, identificationColor) VALUES 
+                        (?, ?, ?, true, ?);`;
+            const [result] = await db.query(sql, [nameService, price, durationMin, identificationColor]);
     
             db.end();
             return result as any;
@@ -97,6 +98,7 @@ export interface IParamsNewService {
     nameService: string,
     price: number,
     durationMin: number,
+    identificationColor?: string,
 }
 
 export interface IParamsUpdateService {
@@ -105,4 +107,5 @@ export interface IParamsUpdateService {
     price: number,
     durationMin: number,
     active: boolean,
+    identificationColor?: string,
 }

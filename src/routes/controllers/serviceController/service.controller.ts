@@ -53,6 +53,7 @@ export const serviceController = {
                 nameService: z.string().min(2, 'O campo Nome Serviço deve conter pelo menos 2 caractere(s)'),
                 price: z.number(),
                 durationMin: z.number(),
+                identificationColor: z.string().nullable(),
             });
             newServiceSchema.parse(req.body);
     
@@ -76,6 +77,7 @@ export const serviceController = {
                 price: z.number(),
                 durationMin: z.number(),
                 active: z.boolean(),
+                identificationColor: z.string().nullable(),
             });
             newServiceSchema.parse(req.body);
     
