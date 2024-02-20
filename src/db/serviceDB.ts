@@ -45,8 +45,9 @@ export const serviceDB = {
             return error;
         }
     },
-    async update(codService: number, nameService: string, price: number, durationMin: number, active: boolean): Promise<IResponseDB> {
+    async update(newService: IParamsUpdateService): Promise<IResponseDB> {
         try {
+            const { nameService, price, durationMin, active, codService } = newService;
             const db = await createConnection();
             const sql = `UPDATE Service SET
                             nameService = ?,
@@ -63,8 +64,9 @@ export const serviceDB = {
            return error as any;
         };
     },
-    async create(nameService: string, price: number, durationMin: number): Promise<IResponseDB> {
+    async create(newService: IParamsNewService): Promise<IResponseDB> {
         try {
+            const { nameService, price, durationMin } = newService;
             const db = await createConnection();
             const sql = `INSERT INTO Service (nameService, price, durationMin, active) VALUES 
                         (?, ?, ?, true);`;
@@ -90,3 +92,17 @@ export const serviceDB = {
         };
     },
 };
+
+export interface IParamsNewService {
+    nameService: string,
+    price: number,
+    durationMin: number,
+}
+
+export interface IParamsUpdateService {
+    codService: number,
+    nameService: string,
+    price: number,
+    durationMin: number,
+    active: boolean,
+}

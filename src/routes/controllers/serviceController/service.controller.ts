@@ -1,64 +1,113 @@
 import { Request, Response } from "express";
 import { serviceDB } from "../../../db/serviceDB";
 import { IErrorSQL } from "../types";
+import { z } from "zod";
 
 export const serviceController = {
     async getAll(req: Request, res: Response) {
-        const response = await serviceDB.getAll();
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {
+            const response = await serviceDB.getAll();
+    
+            if((response as IErrorSQL).errno) {
+                res.json({ error: response });
+                return;
+            };
+            res.json(response);
+        } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
+            res.json({error});
+        }
     },
     async getAllActive(req: Request, res: Response) {
-        const response = await serviceDB.getAllActive();
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {
+            const response = await serviceDB.getAllActive();
+    
+            if((response as IErrorSQL).errno) {
+                res.json({ error: response });
+                return;
+            };
+            res.json(response);
+        } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
+            res.json({error});
+        }
     },
     async get(req: Request, res: Response) {
-        const { id } = req.params;
-        const response = await serviceDB.get(id);
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {
+            const { id } = req.params;
+            const response = await serviceDB.get(id);
+    
+            if((response as IErrorSQL).errno) {
+                res.json({ error: response });
+                return;
+            };
+            res.json(response);
+        } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
+            res.json({error});
+        }
     },
     async create(req: Request, res: Response) {
-        const {nameService, price, durationMin } = req.body;
-        const response = await serviceDB.create(nameService, price, durationMin);
+        try {
+            const newServiceSchema = z.object({
+                nameService: z.string().min(2, 'O campo Nome Serviço deve conter pelo menos 2 caractere(s)'),
+                price: z.number(),
+                durationMin: z.number(),
+            });
+            newServiceSchema.parse(req.body);
     
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.status(201).json({ message: `Registro criado ID: ${response.insertId}` });
+            const response = await serviceDB.create(req.body);
+        
+            if((response as IErrorSQL).errno) {
+                res.json({ error: response });
+                return;
+            };
+            res.status(201).json({ message: `Registro criado ID: ${response.insertId}` });
+        } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
+            res.json({error});
+        }
     },
     async update(req: Request, res: Response) {
-        const { codService, nameService, price, durationMin, active } = req.body;
-        const response = await serviceDB.update(codService, nameService, price, durationMin, active);
+        try {
+            const newServiceSchema = z.object({
+                codService: z.number(),
+                nameService: z.string().min(2, 'O campo Nome Serviço deve conter pelo menos 2 caractere(s)'),
+                price: z.number(),
+                durationMin: z.number(),
+                active: z.boolean(),
+            });
+            newServiceSchema.parse(req.body);
     
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
+            const response = await serviceDB.update(req.body);
+        
+            if((response as IErrorSQL).errno) {
+                res.json({ error: response });
+                return;
+            };
+            res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
+        } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
+            res.json({error});
+        }
     },
     async delete(req: Request, res: Response) {
-        const { id } = req.params;
-        const response = await serviceDB.delete(Number(id));
+        try {
+            const { id } = req.params;
 
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.status(200).json({ message: `${response.affectedRows} registro(s) deletado(s)` });
+            const newServiceSchema = z.string().regex(/^\d{1,}$/g, 'O campo ID precisa ser numérico');
+            newServiceSchema.parse(id);
+
+            const response = await serviceDB.delete(Number(id));
+    
+            if((response as IErrorSQL).errno) {
+                res.json({ error: response });
+                return;
+            };
+            res.status(200).json({ message: `${response.affectedRows} registro(s) deletado(s)` });
+        } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
+            res.json({error});
+        }
     },
 };

@@ -19,18 +19,18 @@ const showMessage = showMessageFunc();
         await runScript(`git push origin ${currentBranch} --tags --no-verify`);
         showMessage.success(`Git push`);
         
-        const current_url_origin = await runScript('git remote get-url origin');
-        const var_branch_production = 'production';
-        const version = getVersion();
-        await runScript(`cd dist/ && git init`);
-        showMessage.success(`cd dist/`);
-        await runScript(`cd dist/ && git checkout -B ${var_branch_production}`);
-        showMessage.success(`   > Created Branch ${var_branch_production}`);
-        await runScript(`cd dist/ && git add -A`);
-        await runScript(`cd dist/ && git commit -m "🚀 Deploy v${version}"`);
-        showMessage.success(`   > Commit `);
-        await runScript(`cd dist/ && git push -f ${current_url_origin} ${var_branch_production} --no-verify`);
-        showMessage.success(`   > Git Push to ${var_branch_production}`);
+        // const current_url_origin = await runScript('git remote get-url origin');
+        // const var_branch_production = 'production';
+        // const version = getVersion();
+        // await runScript(`cd dist/ && git init`);
+        // showMessage.success(`cd dist/`);
+        // await runScript(`cd dist/ && git checkout -B ${var_branch_production}`);
+        // showMessage.success(`   > Created Branch ${var_branch_production}`);
+        // await runScript(`cd dist/ && git add -A`);
+        // await runScript(`cd dist/ && git commit -m "🚀 Deploy v${version}"`);
+        // showMessage.success(`   > Commit `);
+        // await runScript(`cd dist/ && git push -f ${current_url_origin} ${var_branch_production} --no-verify`);
+        // showMessage.success(`   > Git Push to ${var_branch_production}`);
 
         showMessage.success('Done 🎉');
     } catch (error) {
