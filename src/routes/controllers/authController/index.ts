@@ -19,6 +19,8 @@ export const authController = {
             const selectedClient = await clientDB.getByEmail(email);
 
             if(!selectedClient || !selectedClient?.passwordClient) throw EmailOrPasswdMessageError;
+            if(selectedClient.blocked) throw 'BLOCKED_CLIENT';
+            
             const decryptPassword = tools.decrypt(selectedClient.passwordClient);
             if(password !== decryptPassword) throw EmailOrPasswdMessageError;
             const newToken = await tools.generateToken();
@@ -28,8 +30,8 @@ export const authController = {
 
             const client = {
                 ...selectedClient,
-                expirationTimeInMinute: 60, // minute
-                dateCreated: moment().toJSON(),
+                expirationTimeInMinute: tools.expirationTimeInMinute,
+                dateCreated: moment().add(tools.expirationTimeInMinute, 'minute').format('YYYY-MM-DD HH:mm'),
             }
             const encryptClient = await tools.encrypt(JSON.stringify(client));
             

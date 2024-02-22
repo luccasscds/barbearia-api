@@ -4,6 +4,8 @@ import * as jose from 'jose'
 const secret = new TextEncoder().encode(process.env.SECRET!);
 
 export const tools = {
+    expirationTimeInMinute: 12 * 60, // minute
+
     encrypt(message: string) {
         return crypto.AES.encrypt(message, process.env.SECRET!).toString();
     },
@@ -22,7 +24,7 @@ export const tools = {
         .setIssuedAt()
         .setIssuer('urn:example:issuer')
         .setAudience('urn:example:audience')
-        .setExpirationTime('12h')
+        .setExpirationTime(`${tools.expirationTimeInMinute}m`)
         .sign(secret);
 
         return jwt;

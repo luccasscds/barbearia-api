@@ -25,6 +25,7 @@ routes.post("/signUp", authController.signUp);
 
 // Client
 routes.get("/authorized/client/list", clientController.getAll);
+routes.get("/authorized/client/list/blocked/:id", clientController.getBlockedOrNo);
 routes.get("/authorized/client/:id", clientController.get);
 routes.post("/authorized/client", clientController.create);
 routes.put("/authorized/client", clientController.update);

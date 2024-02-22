@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { tools } from "../../../tools";
+import { clientDB } from "../../../db/clientDB";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
     try {
-        const { token } = req.headers;
+        const { token, codclient } = req.headers;
         
         if(!token) {
             res.json({error: 'Sem token'});
@@ -16,7 +17,10 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
             return;
         };
     
-        await tools.verifyToken((token as string))
+        await tools.verifyToken((token as string));
+
+        const client = await clientDB.get(Number(codclient)) as any;
+        if(client.blocked) throw 'BLOCKED_CLIENT';
         
         next();
     } catch (error) {
