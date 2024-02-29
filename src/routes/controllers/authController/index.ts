@@ -3,6 +3,9 @@ import { z } from "zod";
 import { clientDB } from "../../../db/clientDB";
 import { tools } from "../../../tools";
 import moment from "moment";
+import { Email } from "./Email";
+import { Google } from "./Google";
+import { tokenCache } from "../../../token/tokenCache";
 
 export const authController = {
     async signIn(req: Request, res: Response) {
@@ -23,7 +26,7 @@ export const authController = {
             
             const decryptPassword = tools.decrypt(selectedClient.passwordClient);
             if(password !== decryptPassword) throw EmailOrPasswdMessageError;
-            const newToken = await tools.generateToken();
+            const newToken = await tools.token.generate();
 
             selectedClient.passwordClient = undefined;
             selectedClient.isADM = !!selectedClient.isADM;
@@ -65,6 +68,72 @@ export const authController = {
         } catch(error) {
             if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
+        };
+    },
+
+    async forgotPassword(req: Request, res: Response) {
+        try {
+            const { email } = req.body;
+    
+            const UserSchema = z.object({
+                email: z.string().email('Email inválido'),
+            });
+            UserSchema.parse(req.body);
+            
+            const client = await clientDB.getByEmail(email);
+            if(!client) throw 'Não existe email cadastrado';
+            client.passwordClient = undefined;
+
+            await Email.send({
+                accessToken: await Google.getAccessToken(),
+                client,
+            });
+
+
+            res.json({status: true});
+        } catch(error) {
+            console.error(error)
+            if((error as any)?.issues) error = (error as any).issues[0];
+            res.json({error});
+        };
+    },
+
+    async createPassword(req: Request, res: Response) {
+        let tokenString;
+        try {
+            const { token, password, confirmPassword } = req.body;
+            const data = JSON.parse(await tools.decrypt(token) ?? '{}');
+            
+            tokenString = await tokenCache.check(data.token);
+            if(!tokenString) throw {code: 'ERR_JWT_EXPIRED'};
+
+            if(password !== confirmPassword) throw 'As senhas precisam ser iguais.';
+
+            const PasswordsSchema = z.object({
+                password: z.string().min(1, 'O campo Senha deve conter pelo menos 1 caractere(s)'),
+                confirmPassword: z.string().min(1, 'O outro campo Senha deve conter pelo menos 1 caractere(s)'),
+            });
+            PasswordsSchema.parse(req.body);
+
+            await tools.token.verify(tokenString);
+
+            await clientDB.update({
+                id: data.client.codClient,
+                email: data.client.emailClient,
+                password: await tools.encrypt(password),
+                name: data.client.nameClient,
+                blocked: !!data.client.blocked,
+            });
+
+            res.json({status: true});
+        } catch(error) {
+            console.error(error);
+            if((error as any).code === 'ERR_JWT_EXPIRED') error = 'Sua seção expirou, por favor tente gerar outro link';
+            
+            if((error as any)?.issues) error = (error as any).issues[0];
+            res.json({error});
+        } finally {
+            tokenCache.delete(tokenString);
         };
     },
 };

@@ -17,7 +17,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
             return;
         };
     
-        await tools.verifyToken((token as string));
+        await tools.token.verify((token as string));
 
         const client = await clientDB.get(Number(codclient)) as any;
         if(client.blocked) throw 'BLOCKED_CLIENT';

@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from 'multer';
+import { getFile } from '../token/tokenCache';
 import { clientController } from './controllers/clientController/client.controller';
 import { eventController } from './controllers/eventController/event.controller';
 import { serviceController } from './controllers/serviceController/service.controller';
@@ -17,8 +18,12 @@ const routes = express.Router();
 
 routes.get("/", async (_, res) => res.send('Bem vindo :)') );
 
+routes.get("/showListToken", async (_, res) => res.json(await getFile()));
+
 routes.post("/signIn", authController.signIn);
 routes.post("/signUp", authController.signUp);
+routes.post("/forgotPassword", authController.forgotPassword);
+routes.post("/createPassword", authController.createPassword);
 
 
 // routes authorized

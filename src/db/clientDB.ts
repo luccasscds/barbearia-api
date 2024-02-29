@@ -60,7 +60,7 @@ export const clientDB = {
             EmailSchema.parse(email);
 
             const db = await createConnection();
-            const sql = `select codClient, nameClient, passwordClient, isADM, blocked
+            const sql = `select codClient, nameClient, emailClient, passwordClient, isADM, blocked
                             from Client where emailClient = ?;`
             const [result] = await db.query(sql, [email]) as any[];
     
@@ -105,27 +105,42 @@ export const clientDB = {
     
     async update(newClient: IParamsUpdateClient): Promise<IResponseDB> {
         try {
-            const { id, name, email, blocked } = newClient;
+            const { id, name, email, blocked, password } = newClient;
 
             const UserSchema = z.object({
                 id: z.number(),
                 name: z.string({ required_error: 'Campo Nome não pode ser vazio' }).min(2, { message: 'O campo Nome deve conter pelo menos 2 caractere(s)' }),
                 email: z.string().email('Email inválido'),
                 blocked: z.boolean(),
+                password: z.string().optional(),
             });
             UserSchema.parse(newClient);
 
             const db = await createConnection();
-            const sql = `   UPDATE Client SET 
-                            nameClient = ?,
-                            emailClient = ?,
-                            blocked = ?
-                            WHERE codClient = ?;`
-            const [result] = await db.query(sql, [name, email, blocked, id]);
-        
-            db.commit();
-            db.end();
-            return result as any;
+            if(password) {
+                const sql = `   UPDATE Client SET 
+                                nameClient = ?,
+                                emailClient = ?,
+                                passwordClient = ?,
+                                blocked = ?
+                                WHERE codClient = ?;`
+                const [result] = await db.query(sql, [name, email, password, blocked, id]);
+
+                db.commit();
+                db.end();
+                return result as any;
+            } else {
+                const sql = `   UPDATE Client SET 
+                                nameClient = ?,
+                                emailClient = ?,
+                                blocked = ?
+                                WHERE codClient = ?;`
+                const [result] = await db.query(sql, [name, email, blocked, id]);
+
+                db.commit();
+                db.end();
+                return result as any;
+            };
         } catch (error) {
             throw error as any;
         };
@@ -153,9 +168,10 @@ interface IResponseClient {
     blocked: boolean,
 }
 
-interface IResponseClientByEmail {
+export interface IResponseClientByEmail {
     codClient: number,
     nameClient: string,
+    emailClient: string,
     passwordClient?: string,
     isADM: boolean,
     blocked: boolean,
@@ -175,4 +191,5 @@ interface IParamsUpdateClient {
     name: string,
     email: string,
     blocked: boolean,
+    password?: string,
 }
