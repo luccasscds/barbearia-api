@@ -11,6 +11,7 @@ const showMessage = showMessageFunc();
         const currentBranch = await runScript("git branch --show-current");
         showMessage.success(`Branch: ${currentBranch}`);
         
+        showMessage.info(`Versioning...`);
         await versioning();
         
         showMessage.info(`Start build...`);
