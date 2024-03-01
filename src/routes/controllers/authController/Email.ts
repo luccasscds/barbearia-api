@@ -2,7 +2,6 @@ import { createTransport } from "nodemailer";
 import { tools } from "../../../tools";
 import moment from "moment";
 import { IResponseClientByEmail } from "../../../db/clientDB";
-import { tokenCache } from "../../../token/tokenCache";
 
 export const Email = {
     async send(options: IParamsSendEmail) {
@@ -31,7 +30,7 @@ export const Email = {
             });
 
             const timeInMinute = 1 * 60;
-            const token = await tools.token.generate(timeInMinute, true);
+            const token = await tools.token.generate(timeInMinute);
             const encryptData = JSON.stringify({
                 token,
                 client: options.client,
@@ -70,7 +69,6 @@ export const Email = {
                 `,
             });
 
-            await tokenCache.clearTokensExpired();
             console.log('email enviado!');
         } catch (error) {
             throw error;

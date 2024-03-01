@@ -5,7 +5,6 @@ import { tools } from "../../../tools";
 import moment from "moment";
 import { Email } from "./Email";
 import { Google } from "./Google";
-import { tokenCache } from "../../../token/tokenCache";
 
 export const authController = {
     async signIn(req: Request, res: Response) {
@@ -99,13 +98,9 @@ export const authController = {
     },
 
     async createPassword(req: Request, res: Response) {
-        let tokenString;
         try {
             const { token, password, confirmPassword } = req.body;
             const data = JSON.parse(await tools.decrypt(token) ?? '{}');
-            
-            tokenString = await tokenCache.check(data.token);
-            if(!tokenString) throw {code: 'ERR_JWT_EXPIRED'};
 
             if(password !== confirmPassword) throw 'As senhas precisam ser iguais.';
 
@@ -115,7 +110,7 @@ export const authController = {
             });
             PasswordsSchema.parse(req.body);
 
-            await tools.token.verify(tokenString);
+            await tools.token.verify(data.token);
 
             await clientDB.update({
                 id: data.client.codClient,
@@ -132,8 +127,6 @@ export const authController = {
             
             if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
-        } finally {
-            tokenCache.delete(tokenString);
         };
     },
 };

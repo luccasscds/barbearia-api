@@ -1,7 +1,6 @@
 import crypto from "crypto-js";
 import * as jose from 'jose';
 // import fs from 'node:fs';
-import { tokenCache } from "../token/tokenCache";
 
 export const tools = {
     expirationTimeInMinute: 12 * 60, // minute
@@ -17,7 +16,7 @@ export const tools = {
     },
 
     token: {
-        async generate(expirationTimeInMinute?: number, recordTokenCache?: boolean) {
+        async generate(expirationTimeInMinute?: number) {
             expirationTimeInMinute = expirationTimeInMinute || tools.expirationTimeInMinute;
             const secret = new TextEncoder().encode(process.env.SECRET!);
 
@@ -28,8 +27,6 @@ export const tools = {
             .setAudience('urn:example:audience')
             .setExpirationTime(`${expirationTimeInMinute}m`)
             .sign(secret);
-            
-            if(recordTokenCache) await tokenCache.save(jwt);
 
             return jwt;
         },
