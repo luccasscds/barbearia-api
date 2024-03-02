@@ -1,6 +1,7 @@
 import { ZodError, z } from 'zod';
 import { IErrorSQL, IResponseDB } from '../routes/controllers/types';
 import { createConnection } from './createConnection';
+import { ResultSetHeader } from 'mysql2';
 
 export const clientDB = {
     async getAll(): Promise<IResponseClient[] | IErrorSQL> {
@@ -15,6 +16,7 @@ export const clientDB = {
             db.end();
             return result as any;
         } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         }
     },
@@ -31,6 +33,7 @@ export const clientDB = {
             db.end();
             return result as any;
         } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         }
     },
@@ -48,6 +51,7 @@ export const clientDB = {
             db.end();
             return result.length ? result[0] : null;
         } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
             throw error;
         }
     },
@@ -99,6 +103,7 @@ export const clientDB = {
             db.end();
             return result as any;
         } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },
@@ -108,40 +113,44 @@ export const clientDB = {
             const { id, name, email, blocked, password } = newClient;
 
             const UserSchema = z.object({
-                id: z.number(),
-                name: z.string({ required_error: 'Campo Nome não pode ser vazio' }).min(2, { message: 'O campo Nome deve conter pelo menos 2 caractere(s)' }),
+                id: z.number({invalid_type_error: 'Campo ID precisa ser número'}),
+                name: z.string({ required_error: 'Campo Nome não pode ser vazio', invalid_type_error: 'Campo Nome precisa ser texto' }).min(2, { message: 'O campo Nome deve conter pelo menos 2 caractere(s)' }),
                 email: z.string().email('Email inválido'),
-                blocked: z.boolean(),
+                blocked: z.boolean({invalid_type_error: 'Campo Bloqueado precisa ser boolean'}),
                 password: z.string().optional(),
             });
             UserSchema.parse(newClient);
 
             const db = await createConnection();
+            let sql = '';
+            let result;
+
             if(password) {
-                const sql = `   UPDATE Client SET 
+                sql = `   UPDATE Client SET 
                                 nameClient = ?,
                                 emailClient = ?,
                                 passwordClient = ?,
                                 blocked = ?
                                 WHERE codClient = ?;`
-                const [result] = await db.query(sql, [name, email, password, blocked, id]);
-
-                db.commit();
-                db.end();
-                return result as any;
+                result = await db.query(sql, [name, email, password, blocked, id]);
             } else {
-                const sql = `   UPDATE Client SET 
+                sql = `   UPDATE Client SET 
                                 nameClient = ?,
                                 emailClient = ?,
                                 blocked = ?
                                 WHERE codClient = ?;`
-                const [result] = await db.query(sql, [name, email, blocked, id]);
-
-                db.commit();
-                db.end();
-                return result as any;
+                result = await db.query(sql, [name, email, blocked, id]);
             };
+
+            if((result[0] as ResultSetHeader).affectedRows === 0) {
+                throw 'Houve algo erro, nenhum resultado(s) inserido(s)';
+            };
+
+            db.commit();
+            db.end();
+            return result[0] as any;
         } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },
@@ -156,6 +165,7 @@ export const clientDB = {
             db.end();
             return result as any;
         } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },

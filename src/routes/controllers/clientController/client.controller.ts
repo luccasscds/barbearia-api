@@ -14,7 +14,6 @@ export const clientController = {
             };
             res.json(response);
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         }
     },
@@ -32,7 +31,6 @@ export const clientController = {
             };
             res.json(response);
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         }
     },
@@ -47,7 +45,6 @@ export const clientController = {
             };
             res.json(response);
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         }
     },
@@ -64,7 +61,6 @@ export const clientController = {
                 message: 'Registro criado',
             });
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         }
     },
@@ -78,7 +74,6 @@ export const clientController = {
             };
             res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         }
     },
@@ -93,7 +88,6 @@ export const clientController = {
             };
             res.status(200).json({ message: `${response.affectedRows} registro(s) deletado(s)` });
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         }
     },

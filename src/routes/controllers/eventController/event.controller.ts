@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { eventDB } from "../../../db/eventDB";
 import { z } from "zod";
+import { clientDB } from "../../../db/clientDB";
 
 export const eventController = {
     async get(req: Request, res: Response) {
@@ -45,6 +46,9 @@ export const eventController = {
                 codPayment: z.number(),
             });
             EventSchema.parse(req.body);
+
+            const client = await clientDB.get(req.body.codClient) as any;
+            if(client.blocked) throw 'BLOCKED_CLIENT';
     
             const response = await eventDB.createEvent(req.body);
     

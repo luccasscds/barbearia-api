@@ -4,21 +4,24 @@ import { companyDB } from "../../../db/companyDB";
 
 export const companyController = {
     async get(req: Request, res: Response) {
-        const { id } = req.params;
-
-        const response = await companyDB.get(id);
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {
+            const { id } = req.params;
+    
+            const response = await companyDB.get(id);
+    
+            if((response as IErrorSQL).errno) {
+                res.json({ error: response });
+                return;
+            };
+            res.json(response);
+        } catch (error) {
+            res.json({ error });
+        }
     },
 
     async update(req: Request, res: Response) {
         try {
-            const { name, photo, numberWhatsApp, nameInstagram, address, codCompany } = req.body;
-            const response = await companyDB.update({name, photo, numberWhatsApp, nameInstagram, address, codCompany});
+            const response = await companyDB.update(req.body);
         
             if((response as IErrorSQL).errno) {
                 res.json({ error: response });
