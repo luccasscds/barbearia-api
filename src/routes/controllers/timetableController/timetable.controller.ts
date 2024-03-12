@@ -4,42 +4,57 @@ import { IErrorSQL } from "../types";
 
 export const timetableController = {
     async getAll(req: Request, res: Response) {
-        const response = await timetableDB.getAll();
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {
+            const {id} = req.params;
+            const response = await timetableDB.getAll(Number(id));
+    
+            if((response as any).errno) {
+                res.json({ error: response });
+                return;
+            };
+            res.json(response);
+            
+        } catch (error) {
+            res.json({error});
+        }
     },
     async get(req: Request, res: Response) {
-        const {id} = req.params;
-        const response = await timetableDB.get(Number(id));
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {
+            const response = await timetableDB.get(req.body);
+    
+            if((response as any).errno) {
+                res.json({ error: response });
+                return;
+            };
+            res.json(response);
+        } catch (error) {
+            res.json({error});
+        }
     },
     async getActiveOrInactive(req: Request, res: Response) {
-        const {id} = req.params;
-        const response = await timetableDB.getActiveOrInactive(id.toLowerCase() === 'true');
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {
+            const response = await timetableDB.getActiveOrInactive(req.body);
+    
+            if((response as any).errno) {
+                res.json({ error: response });
+                return;
+            };
+            res.json(response);
+        } catch (error) {
+            res.json({error});
+        }
     },
     async update(req: Request, res: Response) {
-        const { codTime, active, time01, time02, time03, time04 } = req.body;
-        const response = await timetableDB.updateTimetable(codTime, active, time01, time02, time03, time04);
-    
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
+        try {
+            const response = await timetableDB.updateTimetable(req.body);
+
+            if((response as IErrorSQL).errno) {
+                res.json({ error: response });
+                return;
+            };
+            res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
+        } catch (error) {
+            res.json({error});
+        }
     },
 }

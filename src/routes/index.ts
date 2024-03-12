@@ -17,8 +17,11 @@ const routes = express.Router();
 
 routes.get("/", async (_, res) => res.send('Bem vindo :)') );
 
-routes.post("/signIn", authController.signIn);
-routes.post("/signUp", authController.signUp);
+routes.post("/signIn", authController.clientSignIn);
+routes.post("/signUp", authController.clientSignUp);
+routes.post("/company/signIn", authController.companySignIn);
+routes.post("/company/signUp", authController.companySignUp);
+
 routes.post("/forgotPassword", authController.forgotPassword);
 routes.post("/createPassword", authController.createPassword);
 
@@ -26,42 +29,42 @@ routes.post("/createPassword", authController.createPassword);
 // routes authorized
 
 // Client
-routes.get("/authorized/client/list", clientController.getAll);
-routes.get("/authorized/client/list/blocked/:id", clientController.getBlockedOrNo);
+routes.get("/authorized/client/list/:id", clientController.getAll);
+routes.post("/authorized/client/list/blocked", clientController.getBlockedOrNo);
 routes.get("/authorized/client/:id", clientController.get);
 routes.post("/authorized/client", clientController.create);
 routes.put("/authorized/client", clientController.update);
-routes.delete("/authorized/client/:id", clientController.delete);
+routes.delete("/authorized/client", clientController.delete);
 
 // Event
-routes.get("/authorized/event/:date", eventController.get);
-routes.get("/authorized/event/client/:id", eventController.getEventByClient);
-routes.get("/authorized/event/date/month/:id", eventController.getEventByMonth);
+routes.post("/authorized/event/date", eventController.get);
+routes.post("/authorized/event/client", eventController.getEventByClient);
+routes.post("/authorized/event/date/month", eventController.getEventByMonth);
 routes.post("/authorized/event", eventController.create);
 routes.put("/authorized/event", eventController.update);
 routes.delete("/authorized/event", eventController.delete);
 routes.delete("/authorized/event/in", eventController.deleteIn);
 
 // Service
-routes.get("/authorized/service/list", serviceController.getAll);
-routes.get("/authorized/service/list/active", serviceController.getAllActive);
-routes.get("/authorized/service/:id", serviceController.get);
+routes.get("/authorized/service/list/:id", serviceController.getAll);
+routes.get("/authorized/service/list/active/:id", serviceController.getAllActive);
+routes.post("/authorized/service/get", serviceController.get);
 routes.post("/authorized/service", serviceController.create);
 routes.put("/authorized/service", serviceController.update);
-routes.delete("/authorized/service/:id", serviceController.delete);
+routes.delete("/authorized/service", serviceController.delete);
 
 // timetable
-routes.get("/authorized/timetable/list", timetableController.getAll);
-routes.get("/authorized/timetable/:id", timetableController.get);
-routes.get("/authorized/timetable/active/:id", timetableController.getActiveOrInactive);
+routes.get("/authorized/timetable/list/:id", timetableController.getAll);
+routes.post("/authorized/timetable", timetableController.get);
+routes.post("/authorized/timetable/active", timetableController.getActiveOrInactive);
 routes.put("/authorized/timetable", timetableController.update);
 
 // Tags
 routes.get("/authorized/tag/list", tagsController.getAll);
 
 // ConfigAgenda
-routes.get("/authorized/config/agenda", configAgendaController.getAll);
-routes.get("/authorized/config/agenda/:id", configAgendaController.get);
+routes.get("/authorized/config/agenda/list/:id", configAgendaController.getAll);
+routes.post("/authorized/config/agenda/get", configAgendaController.get);
 routes.put("/authorized/config/agenda", configAgendaController.update);
 
 // Company

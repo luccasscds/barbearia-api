@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { z } from "zod";
 import { paymentMethodDB } from "../../../db/paymentMethodDB";
 
 export const paymentMethodController = {
@@ -13,7 +12,6 @@ export const paymentMethodController = {
             };
             res.json(response);
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         }
     }

@@ -2,16 +2,21 @@ import { ZodError, z } from 'zod';
 import { IErrorSQL, IResponseDB } from '../routes/controllers/types';
 import { createConnection } from './createConnection';
 import { ResultSetHeader } from 'mysql2';
+import { handleZod } from '../tools/handleZod';
 
 export const clientDB = {
-    async getAll(): Promise<IResponseClient[] | IErrorSQL> {
+    async getAll(codCompany: number): Promise<IResponseClient[] | IErrorSQL> {
         try {
+            const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
+            codCompanySchema.parse(codCompany);
+
             const db = await createConnection();
             const sql = `select codClient, nameClient, emailClient, numberPhone, blocked
                         from Client 
                         where isADM = false
-                        and blocked = false;`
-            const [result] = await db.query(sql);
+                        and blocked = false
+                        AND codCompany = ?;`
+            const [result] = await db.query(sql, [codCompany]);
     
             db.end();
             return result as any;
@@ -21,14 +26,22 @@ export const clientDB = {
         }
     },
 
-    async getBlockedOrNo(blocked: boolean): Promise<IResponseClient[] | IErrorSQL> {
+    async getBlockedOrNo(newClient: IParamsGetBlockedOrNo): Promise<IResponseClient[] | IErrorSQL> {
         try {
+            const UserSchema = z.object({
+                blocked: z.boolean(handleZod.params('Bloqueado', 'boolean')),
+                codCompany: z.number(handleZod.params('codCompany', 'número')),
+            });
+            UserSchema.parse(newClient);
+
+            const { blocked, codCompany } = newClient;
             const db = await createConnection();
             const sql = `select codClient, nameClient, emailClient, numberPhone, blocked
                         from Client 
                         where blocked = ?
-                        and isADM = false;`
-            const [result] = await db.query(sql, [blocked]);
+                        and isADM = false
+                        AND codCompany = ?;`
+            const [result] = await db.query(sql, [blocked, codCompany]);
     
             db.end();
             return result as any;
@@ -45,7 +58,8 @@ export const clientDB = {
 
             const db = await createConnection();
             const sql = `   select codClient, nameClient, emailClient, numberPhone, blocked
-                            from Client where codClient = ?;`
+                            from Client 
+                            where codClient = ?;`
             const [result] = await db.query(sql, [id]) as any[];
     
             db.end();
@@ -58,14 +72,13 @@ export const clientDB = {
 
     async getByEmail(email: string): Promise<IResponseClientByEmail> {
         try {
-            const EmailSchema = z.string({
-                required_error: 'Campo Email não pode ser vazio'
-            }).email('Email inválido');
+            const EmailSchema = handleZod.email();
             EmailSchema.parse(email);
 
             const db = await createConnection();
-            const sql = `select codClient, nameClient, emailClient, passwordClient, isADM, blocked
-                            from Client where emailClient = ?;`
+            const sql = `select codClient, nameClient, emailClient, passwordClient, isADM, blocked, codCompany
+                            FROM Client
+                            WHERE emailClient = ?;`
             const [result] = await db.query(sql, [email]) as any[];
     
             db.end();
@@ -79,25 +92,28 @@ export const clientDB = {
     
     async new(newClient: IParamsNewClient): Promise<IResponseDB> {
         try {
-            const { email, name, password, isADM, numberPhone, blocked } = newClient;
+            const { email, name, password, isADM, numberPhone, blocked, codCompany } = newClient;
 
             const UserSchema = z.object({
-                name: z.string({ required_error: 'Campo Nome não pode ser vazio' }).min(2, { message: 'O campo Nome deve conter pelo menos 2 caractere(s)' }),
-                email: z.string().email('Email inválido').or(z.string().max(0)),
-                password: z.string().min(1, 'O campo Senha deve conter pelo menos 1 caractere(s)').optional().nullable(),
-                isADM: z.boolean().optional().nullable(),
-                numberPhone: z.string().min(11, {message: 'O campo Telefone deve conter pelo menos 11 caractere(s)'}).max(14, {message: 'O campo Telefone deve conter máximo 14 caractere(s)'}).or(z.string().max(0)),
-                blocked: z.boolean().optional().nullable(),
+                name: z.string(handleZod.params('Nome', 'texto')).min(2, { message: 'O campo Nome deve conter pelo menos 2 caractere(s)' }),
+                email: handleZod.email().or(z.string().max(0)),
+                password: z.string(handleZod.params('Senha', 'texto')).min(1, 'O campo Senha deve conter pelo menos 1 caractere(s)').optional().nullable(),
+                isADM: z.boolean(handleZod.params('isADM', 'boolean')).optional().nullable(),
+                numberPhone: z.string(handleZod.params('Número de Telefone', 'texto')).min(11, {message: 'O campo Telefone deve conter pelo menos 11 caractere(s)'}).max(14, {message: 'O campo Telefone deve conter máximo 14 caractere(s)'}).or(z.string().max(0)),
+                blocked: z.boolean(handleZod.params('Bloqueado', 'boolean')).optional().nullable(),
+                codCompany: z.number(handleZod.params('codCompany', 'número')),
             });
             UserSchema.parse(newClient);
+
+            if(await clientDB.isExist(email)) throw 'o Email inserido já está cadastrado';
             
             const db = await createConnection();
             const sql = `INSERT INTO Client 
-                            (nameClient, emailClient, passwordClient, isADM, numberPhone, blocked) 
+                            (nameClient, emailClient, passwordClient, isADM, numberPhone, blocked, codCompany) 
                         VALUES 
-                            (?, ?, ?, ?, ?, ?);
+                            (?, ?, ?, ?, ?, ?, ?);
             `;
-            const [result] = await db.query(sql, [name, email, (password ?? ''), (isADM ?? false), (numberPhone ?? ''), (blocked ?? false)]);
+            const [result] = await db.query(sql, [name, email, (password ?? ''), (isADM ?? false), (numberPhone ?? ''), (blocked ?? false), codCompany ]);
 
             db.commit();
             db.end();
@@ -110,14 +126,15 @@ export const clientDB = {
     
     async update(newClient: IParamsUpdateClient): Promise<IResponseDB> {
         try {
-            const { id, name, email, blocked, password } = newClient;
+            const { id, name, email, blocked, password, codCompany } = newClient;
 
             const UserSchema = z.object({
-                id: z.number({invalid_type_error: 'Campo ID precisa ser número'}),
-                name: z.string({ required_error: 'Campo Nome não pode ser vazio', invalid_type_error: 'Campo Nome precisa ser texto' }).min(2, { message: 'O campo Nome deve conter pelo menos 2 caractere(s)' }),
-                email: z.string().email('Email inválido'),
-                blocked: z.boolean({invalid_type_error: 'Campo Bloqueado precisa ser boolean'}),
-                password: z.string().optional(),
+                id: z.number(handleZod.params('ID', 'número')),
+                name: z.string(handleZod.params('Nome', 'texto')).min(2, { message: 'O campo Nome deve conter pelo menos 2 caractere(s)' }),
+                email: handleZod.email(),
+                blocked: z.boolean(handleZod.params('Bloqueado', 'boolean')),
+                password: z.string(handleZod.params('Senha', 'texto')).optional(),
+                codCompany: z.number(handleZod.params('codCompany', 'número')),
             });
             UserSchema.parse(newClient);
 
@@ -131,15 +148,17 @@ export const clientDB = {
                                 emailClient = ?,
                                 passwordClient = ?,
                                 blocked = ?
-                                WHERE codClient = ?;`
-                result = await db.query(sql, [name, email, password, blocked, id]);
+                                WHERE codClient = ?
+                                AND codCompany = ?;`
+                result = await db.query(sql, [name, email, password, blocked, id, codCompany]);
             } else {
                 sql = `   UPDATE Client SET 
                                 nameClient = ?,
                                 emailClient = ?,
                                 blocked = ?
-                                WHERE codClient = ?;`
-                result = await db.query(sql, [name, email, blocked, id]);
+                                WHERE codClient = ?
+                                AND codCompany = ?;`
+                result = await db.query(sql, [name, email, blocked, id, codCompany]);
             };
 
             if((result[0] as ResultSetHeader).affectedRows === 0) {
@@ -155,11 +174,42 @@ export const clientDB = {
         };
     },
     
-    async delete(id: number): Promise<IResponseDB> {
+    async delete(newClient: IParamsDelete): Promise<IResponseDB> {
         try {
+            const { codClient, codCompany } = newClient;
+            const UserSchema = z.object({
+                codClient: z.number(handleZod.params('codClient', 'número')),
+                codCompany: z.number(handleZod.params('codCompany', 'número')),
+            });
+            UserSchema.parse(newClient);
+
             const db = await createConnection();
-            const sql = `DELETE FROM Client WHERE codClient = ?;`
-            const [result] = await db.query(sql, [id]);
+            const sql = `DELETE FROM Client 
+                        WHERE codClient = ?
+                        AND codCompany = ?;`
+            const [result] = await db.query(sql, [codClient, codCompany]);
+        
+            if((result as ResultSetHeader).affectedRows === 0) {
+                throw 'Houve algo erro, nenhum resultado(s) inserido(s)';
+            };
+
+            db.commit();
+            db.end();
+            return result as any;
+        } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
+            throw error as any;
+        };
+    },
+
+    async isExist(email: string): Promise<number|undefined> {
+        try {
+            if(!email) return;
+
+            const db = await createConnection();
+            const sql = `SELECT 1 FROM Client
+                        WHERE emailClient = ?`;
+            const [result] = await db.query(sql, [email]);
         
             db.commit();
             db.end();
@@ -185,6 +235,7 @@ export interface IResponseClientByEmail {
     passwordClient?: string,
     isADM: boolean,
     blocked: boolean,
+    codCompany: number,
 }
 
 interface IParamsNewClient {
@@ -194,6 +245,7 @@ interface IParamsNewClient {
     isADM?: boolean,
     numberPhone?: string,
     blocked?: boolean,
+    codCompany: number,
 }
 
 interface IParamsUpdateClient {
@@ -202,4 +254,15 @@ interface IParamsUpdateClient {
     email: string,
     blocked: boolean,
     password?: string,
+    codCompany: number,
+}
+
+interface IParamsGetBlockedOrNo {
+    blocked: boolean,
+    codCompany: number,
+}
+
+interface IParamsDelete {
+    codClient: number,
+    codCompany: number,
 }

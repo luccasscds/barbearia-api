@@ -5,7 +5,8 @@ import { configAgendaDB } from "../../../db/configAgendaDB";
 export const configAgendaController = {
     async getAll(req: Request, res: Response) {
         try {
-            const response = await configAgendaDB.getAll();
+            const { id } = req.params;
+            const response = await configAgendaDB.getAll(Number(id));
     
             if((response as IErrorSQL).errno) {
                 res.json({ error: response });
@@ -18,9 +19,7 @@ export const configAgendaController = {
     },
     async get(req: Request, res: Response) {
         try {
-            const { id } = req.params;
-            
-            const response = await configAgendaDB.get(id);
+            const response = await configAgendaDB.get(req.body);
     
             if((response as IErrorSQL).errno) {
                 res.json({ error: response });

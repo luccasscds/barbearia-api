@@ -5,18 +5,20 @@ import { tools } from "../../../tools";
 import moment from "moment";
 import { Email } from "./Email";
 import { Google } from "./Google";
+import { companyDB } from "../../../db/companyDB";
+import { handleZod } from "../../../tools/handleZod";
 
 export const authController = {
-    async signIn(req: Request, res: Response) {
+    async clientSignIn(req: Request, res: Response) {
         try {
             const { email, password } = req.body;
             const EmailOrPasswdMessageError = 'Email ou Senha estão incorretos';
 
             const UserSchema = z.object({
-                email: z.string().email('Email inválido'),
+                email: handleZod.email(),
                 password: z.string().min(1, 'O campo Senha deve conter pelo menos 1 caractere(s)'),
             });
-            UserSchema.parse({ email, password });
+            UserSchema.parse(req.body);
 
             const selectedClient = await clientDB.getByEmail(email);
 
@@ -43,17 +45,18 @@ export const authController = {
             res.json({error});
         }
     },
-    async signUp(req: Request, res: Response) {
+    async clientSignUp(req: Request, res: Response) {
         try {
-            const { name, email, password, numberPhone } = req.body;
+            const { name, email, password, numberPhone, codCompany } = req.body;
     
             const UserSchema = z.object({
                 name: z.string().min(1, 'O campo Nome deve conter pelo menos 1 caractere(s)'),
-                email: z.string().email('Email inválido'),
+                email: handleZod.email(),
                 numberPhone: z.string().min(11, 'O campo Telefone deve conter pelo menos 11 caractere(s)').max(11, 'O campo Telefone deve conter no máximo 11 caractere(s)'),
                 password: z.string().min(1, 'O campo Senha deve conter pelo menos 1 caractere(s)'),
+                codCompany: z.number(handleZod.params('codCompany', 'número')),
             });
-            UserSchema.parse({ name, email, password, numberPhone });
+            UserSchema.parse(req.body);
             
             const newPassword = tools.encrypt(password);
             await clientDB.new({
@@ -61,6 +64,67 @@ export const authController = {
                 email,
                 password: newPassword,
                 numberPhone,
+                codCompany,
+            });
+
+            res.json({status: true});
+        } catch(error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
+            res.json({error});
+        };
+    },
+
+    async companySignIn(req: Request, res: Response) {
+        try {
+            const { email, password } = req.body;
+            const EmailOrPasswdMessageError = 'Email ou Senha estão incorretos';
+
+            const UserSchema = z.object({
+                email: handleZod.email(),
+                password: z.string().min(1, 'O campo Senha deve conter pelo menos 1 caractere(s)'),
+            });
+            UserSchema.parse(req.body);
+
+            const selectedCompany = await companyDB.getByEmail(email);
+
+            if(!selectedCompany || !selectedCompany?.password) throw EmailOrPasswdMessageError;
+            if(selectedCompany.blocked) throw 'BLOCKED_CLIENT';
+            
+            const decryptPassword = tools.decrypt(selectedCompany.password);
+            if(password !== decryptPassword) throw EmailOrPasswdMessageError;
+            const newToken = await tools.token.generate();
+
+            selectedCompany.password = undefined;
+
+            const company = {
+                ...selectedCompany,
+                expirationTimeInMinute: tools.expirationTimeInMinute,
+                dateCreated: moment().add(tools.expirationTimeInMinute, 'minute').format('YYYY-MM-DD HH:mm'),
+            }
+            const encryptClient = await tools.encrypt(JSON.stringify(company));
+            
+            res.json({ token: newToken, company: encryptClient });
+        } catch (error) {
+            if((error as any)?.issues) error = (error as any).issues[0];
+            res.json({error});
+        }
+    },
+    async companySignUp(req: Request, res: Response) {
+        try {
+            const { password } = req.body;
+    
+            const UserSchema = z.object({
+                name: z.string().min(1, 'O campo Nome deve conter pelo menos 1 caractere(s)'),
+                emailCompany: handleZod.email(),
+                numberWhatsApp: z.string().min(11, 'O campo Telefone deve conter pelo menos 11 caractere(s)').max(11, 'O campo Telefone deve conter no máximo 11 caractere(s)'),
+                password: z.string().min(1, 'O campo Senha deve conter pelo menos 1 caractere(s)'),
+            });
+            UserSchema.parse(req.body);
+            
+            const newPassword = tools.encrypt(password);
+            await companyDB.create({
+                ...req.body,
+                password: newPassword,
             });
 
             res.json({status: true});
@@ -75,7 +139,7 @@ export const authController = {
             const { email } = req.body;
     
             const UserSchema = z.object({
-                email: z.string().email('Email inválido'),
+                email: handleZod.email(),
             });
             UserSchema.parse(req.body);
             
@@ -118,6 +182,7 @@ export const authController = {
                 password: await tools.encrypt(password),
                 name: data.client.nameClient,
                 blocked: !!data.client.blocked,
+                codCompany: data.client.codCompany,
             });
 
             res.json({status: true});

@@ -1,6 +1,7 @@
 CREATE TABLE Client (
-    codClient       INT PRIMARY KEY AUTO_INCREMENT,
+    codClient       INTEGER PRIMARY KEY AUTOINCREMENT,
     nameClient      VARCHAR(100) NOT NULL,
+    codCompany      INTEGER NOT NULL,
     emailClient     VARCHAR(100),
     passwordClient  VARCHAR(500),
     isADM           BOOLEAN,
@@ -8,36 +9,33 @@ CREATE TABLE Client (
     blocked         BOOLEAN NOT NULL,
     CONSTRAINT UC_name UNIQUE (nameClient)
 );
-/
+
 CREATE TABLE Service (
-    codService          INT PRIMARY KEY AUTO_INCREMENT,
+    codService          INTEGER PRIMARY KEY AUTOINCREMENT,
+    codCompany          INTEGER NOT NULL,
     nameService         VARCHAR(50) NOT NULL,
-    price               FLOAT(10, 2) NOT NULL,
-    durationMin         INT NOT NULL,
+    price               REAL NOT NULL,
+    durationMin         INTEGER NOT NULL,
     active              BOOLEAN NOT NULL,
-    identificationColor VARCHAR(10),
+    identificationColor VARCHAR(10)
 );
-/
--- CREATE TABLE ClientService (
---     codClientService    INT PRIMARY KEY AUTO_INCREMENT,
---     codClient           INT NOT NULL,
---     codService          INT NOT NULL
--- );
-/
+
 CREATE TABLE VirtualLine (
-    codVirtual          INT PRIMARY KEY AUTO_INCREMENT,
-    codClient           INT NOT NULL,
-    codService          INT NOT NULL,
-    codStatus           INT NOT NULL,
-    codPayment          INT,
+    codVirtual          INTEGER PRIMARY KEY AUTOINCREMENT,
+    codCompany          INTEGER NOT NULL,
+    codClient           INTEGER NOT NULL,
+    codService          INTEGER NOT NULL,
+    codStatus           INTEGER NOT NULL,
+    codPayment          INTEGER,
     dateVirtual         DATETIME NOT NULL,
     startTime           TIME NOT NULL,
     endTime             TIME NOT NULL,
     CONSTRAINT UC_client_service_date_startTime UNIQUE (codClient, codService, dateVirtual, startTime)
 );
-/
+
 CREATE TABLE Timetable (
-    codTime     INT PRIMARY KEY AUTO_INCREMENT,
+    codTime     INTEGER PRIMARY KEY AUTOINCREMENT,
+    codCompany  INTEGER NOT NULL,
     day         VARCHAR(13) NOT NULL,
     active      BOOLEAN NOT NULL,
     time01      TIME,
@@ -45,30 +43,42 @@ CREATE TABLE Timetable (
     time03      TIME,
     time04      TIME
 );
-/
+
 CREATE TABLE ConfigSchedule (
-  codConfig INT PRIMARY KEY,
-  keyConfig VARCHAR(100) NOT NULL,
-  valueConfig VARCHAR(200) NOT NULL
+    codConfig   INTEGER PRIMARY KEY,
+    codCompany  INTEGER NOT NULL,
+    keyConfig   VARCHAR(100) NOT NULL,
+    valueConfig VARCHAR(200) NOT NULL
 );
-/
+
 CREATE TABLE Status (
-  codStatus INT PRIMARY KEY,
-  name VARCHAR(50) NOT NULL
+    codStatus   INTEGER PRIMARY KEY,
+    name        VARCHAR(50) NOT NULL
 );
-/
+
 CREATE TABLE Company (
-  codCompany      INT PRIMARY KEY AUTO_INCREMENT,
-  name            VARCHAR(100),
-  photo           MEDIUMTEXT,
-  numberWhatsApp  VARCHAR(11),
-  nameInstagram   VARCHAR(50),
-  address         VARCHAR(100)
+    codCompany      INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            VARCHAR(100),
+    photo           MEDIUMTEXT,
+    numberWhatsApp  VARCHAR(11),
+    nameInstagram   VARCHAR(50),
+    address         VARCHAR(100),
+    emailCompany    VARCHAR(100) NOT NULL,
+    password        VARCHAR(500) NOT NULL,
+    slug            VARCHAR(50),
+    blocked         BOOLEAN NOT NULL DEFAULT FALSE
 );
-/
+
+CREATE TABLE CompanyClient (
+    codCompanyClient  INTEGER PRIMARY KEY AUTOINCREMENT,
+    codCompany        INTEGER NOT NULL,
+    codClient         INTEGER NOT NULL,
+    CONSTRAINT UC_codCompany_codClient UNIQUE (codCompany, codClient)
+);
+
 CREATE TABLE PaymentMethod (
-  codPay INT PRIMARY KEY AUTO_INCREMENT,
-  name VARCHAR(50) NOT NULL
+    codPay      INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        VARCHAR(50) NOT NULL
 );
 
 -- INSERTS
@@ -109,14 +119,14 @@ INSERT INTO VirtualLine (codClient, codService, status, dateVirtual) VALUES
 (4, 5, 'Tempo estimado', current_date),
 (5, 2, 'Tempo estimado', current_date);
 /
-INSERT INTO Timetable (day, active, time01, time02, time03, time04) VALUES
-('Segunda-feira',   true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
-('Terça-feira',     true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
-('Quarta-feira',    true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
-('Quinta-feira',    true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
-('Sexta-feira',     true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
-('Sábado',          true, '09:00:00', '17:00:00', '', ''),
-('Domingo',         false, '', '', '', '');
+INSERT INTO Timetable (day, codCompany, active, time01, time02, time03, time04) VALUES
+('Segunda-feira',   1, true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
+('Terça-feira',     1, true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
+('Quarta-feira',    1, true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
+('Quinta-feira',    1, true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
+('Sexta-feira',     1, true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
+('Sábado',          1, true, '09:00:00', '17:00:00', '', ''),
+('Domingo',         1, false, '', '', '', '');
 /
 Insert into ConfigSchedule (codConfig, keyConfig, valueConfig) values 
 (1, 'timeIntervalMin', '15'),
@@ -141,12 +151,15 @@ INSERT INTO Status (codStatus, name) VALUES
 INSERT INTO Company (name, photo, numberWhatsApp, nameInstagram, address) VALUES
 ('💈Franskym Santos💈', 'https://d118if3nwdjtgn.cloudfront.net/487248/PAGE_BIO_IMAGE/-1075275270', '5586998350894', 'franskym_santos', '');
 /
-INSERT INTO PaymentMethod (name) VALUES
-('Nenhum'),
-('Dinheiro'),
-('Transferência/PIX'),
-('Cartão de Crédito'),
-('Cartão de Débito'),
-('Cheque'),
-('Cortesia');
+INSERT INTO PaymentMethod (codPay, name) VALUES
+(1, 'Nenhum'),
+(2, 'Dinheiro'),
+(3, 'Transferência/PIX'),
+(4, 'Cartão de Crédito'),
+(5, 'Cartão de Débito'),
+(6, 'Cheque'),
+(7, 'Cortesia');
+/
+INSERT INTO CompanyClient (codClient, codCompany)
+(select codClient, 1 codCompany from Client);
 /

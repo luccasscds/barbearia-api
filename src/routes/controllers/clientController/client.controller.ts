@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { clientDB } from '../../../db/clientDB';
 import { IErrorSQL } from "../types";
-import { z } from "zod";
 
 export const clientController = {
     async getAll(req: Request, res: Response) {
         try {
-            const response = await clientDB.getAll();
+            const {id} = req.params;
+            const response = await clientDB.getAll(Number(id));
     
             if((response as IErrorSQL).errno) {
                 res.json({ error: response });
@@ -19,11 +19,7 @@ export const clientController = {
     },
     async getBlockedOrNo(req: Request, res: Response) {
         try {
-            const blocked = req.params.id === 'true';
-            const clientSchema = z.boolean();
-            clientSchema.parse(blocked);
-
-            const response = await clientDB.getBlockedOrNo(blocked);
+            const response = await clientDB.getBlockedOrNo(req.body);
     
             if((response as IErrorSQL).errno) {
                 res.json({ error: response });
@@ -79,8 +75,7 @@ export const clientController = {
     },
     async delete(req: Request, res: Response) {
         try {
-            const { id } = req.params;
-            const response = await clientDB.delete(Number(id));
+            const response = await clientDB.delete(req.body);
         
             if((response as IErrorSQL).errno) {
                 res.json({ error: response });
