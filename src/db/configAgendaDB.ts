@@ -1,29 +1,25 @@
 import { z } from 'zod';
-import { IErrorSQL, IResponseDB } from '../routes/controllers/types';
-import { createConnection } from './createConnection';
-import { ResultSetHeader } from 'mysql2';
+import { connectionToDatabase } from './createConnection';
 import { handleZod } from '../tools/handleZod';
+import { ResultSet } from '@libsql/client/.';
 
 export const configAgendaDB = {
-    async getAll(codCompany: number): Promise<IResponse[] | IErrorSQL> {
+    async getAll(codCompany: number): Promise<IResponse[]> {
         try {
             const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
             codCompanySchema.parse(codCompany);
 
-            const db = await createConnection();
             const sql = `SELECT keyConfig, valueConfig 
                         FROM ConfigSchedule
                         WHERE codCompany = ?;`
-            const [result] = await db.query(sql, [codCompany]);
+            const result = await connectionToDatabase(sql, [codCompany] );
     
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         }
     },
-    async get(newConfigAgenda: IParamsGetConfigAgenda): Promise<IResponse[] | IErrorSQL> {
+    async get(newConfigAgenda: IParamsGetConfigAgenda): Promise<IResponse[]> {
         try {
             const { codCompany, keys } = newConfigAgenda;
             const newEventSchema = z.object({
@@ -34,20 +30,17 @@ export const configAgendaDB = {
 
             const newValue = keys.map((key) => `"${key}"`).join(',');
 
-            const db = await createConnection();
             const sql = `select keyConfig, valueConfig from ConfigSchedule
                         WHERE keyConfig in(${newValue})
                         AND codCompany = ${codCompany};`
-            const [result] = await db.query(sql);
+            const result = await connectionToDatabase(sql);
     
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         }
     },
-    async update(newConfig: IParamsUpdate): Promise<IResponseDB> {
+    async update(newConfig: IParamsUpdate): Promise<ResultSet> {
         try {
             const { keyConfig, valueConfig, codCompany } = newConfig;
             const newConfigSchema = z.object({
@@ -57,22 +50,14 @@ export const configAgendaDB = {
             });
             newConfigSchema.parse(newConfig);
 
-            const db = await createConnection();
             const sql = `   UPDATE ConfigSchedule SET 
                             valueConfig = ?
                             WHERE keyConfig = ?
                             AND codCompany = ?;`
-            const [result] = await db.query(sql, [valueConfig, keyConfig, codCompany]);
+            const result = await connectionToDatabase(sql, [valueConfig, keyConfig, codCompany] );
         
-            if((result as ResultSetHeader).affectedRows === 0) {
-                throw 'Houve algo erro, nenhum resultado(s) inserido(s)';
-            };
-
-            db.commit();
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },

@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { createConnection } from "./createConnection";
+import { connectionToDatabase } from "./createConnection";
 import { handleZod } from "../tools/handleZod";
-import { ResultSetHeader } from "mysql2";
 
 export const timetableDB = {
     async getAll(codCompany: number) {
@@ -9,17 +8,14 @@ export const timetableDB = {
             const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
             codCompanySchema.parse(codCompany);
 
-            const db = await createConnection();
             const sql = `select 
                             codTime, day, active, time01, time02, time03, time04, codCompany
                         from Timetable
                         where codCompany = ?;`;
-            const [result] = await db.query(sql, [codCompany]);
+            const result = await connectionToDatabase(sql, [codCompany] );
     
-            db.end();
             return result;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error;
         }
     },
@@ -32,18 +28,15 @@ export const timetableDB = {
             });
             newTimeSchema.parse(newTime);
 
-            const db = await createConnection();
             const sql = `select 
                             codTime, day, active, time01, time02, time03, time04
                         from Timetable 
                         where codTime = ?
                         and codCompany = ?;`;
-            const [result] = await db.query(sql, [codTime, codCompany]);
+            const result = await connectionToDatabase(sql, [codTime, codCompany] );
     
-            db.end();
             return result;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error;
         }
     },
@@ -58,19 +51,16 @@ export const timetableDB = {
             });
             newTimeSchema.parse(newTime);
 
-            const db = await createConnection();
             const sql = `select 
                             codTime, day, active, time01, time02, time03, time04
                         from Timetable 
                         where active = ?
                         and codCompany = ?
                         and codTime = ?;`;
-            const [result] = await db.query(sql, [active, codCompany, codTime]);
+            const result = await connectionToDatabase(sql, [active, codCompany, codTime] );
     
-            db.end();
             return result;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error;
         }
     },
@@ -89,7 +79,6 @@ export const timetableDB = {
             });
             newTimeSchema.parse(newTime);
 
-            const db = await createConnection();
             const sql = `   UPDATE Timetable SET
                                 active = ?,
                                 time01 = ?,
@@ -98,17 +87,10 @@ export const timetableDB = {
                                 time04 = ?
                             WHERE codTime = ?
                             AND codCompany = ?;`;
-            const [result] = await db.query(sql, [active, time01, time02, time03, time04, codTime, codCompany]);
-        
-            if((result as ResultSetHeader).affectedRows === 0) {
-                throw 'Houve algo erro, nenhum resultado(s) inserido(s)';
-            };
-
-            db.commit();
-            db.end();
+            const result = await connectionToDatabase(sql, [active, time01, time02, time03, time04, codTime, codCompany] );
+            
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },
@@ -118,7 +100,6 @@ export const timetableDB = {
             const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
             codCompanySchema.parse(codCompany);
 
-            const db = await createConnection();
             const sql = `   INSERT INTO Timetable (day, codCompany, active, time01, time02, time03, time04) VALUES
                             ('Segunda-feira',   ?, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
                             ('Terça-feira',     ?, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
@@ -127,13 +108,10 @@ export const timetableDB = {
                             ('Sexta-feira',     ?, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
                             ('Sábado',          ?, true, '09:00:00',    '17:00:00', '',         ''),
                             ('Domingo',         ?, false, '',           '',         '',         '');`;
-            const [result] = await db.query(sql, [codCompany]);
+            const result = await connectionToDatabase(sql, [codCompany] );
         
-            db.commit();
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     }

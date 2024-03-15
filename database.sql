@@ -1,3 +1,5 @@
+-- Current database SQLite
+
 CREATE TABLE Client (
     codClient       INTEGER PRIMARY KEY AUTOINCREMENT,
     nameClient      VARCHAR(100) NOT NULL,

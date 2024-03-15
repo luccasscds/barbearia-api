@@ -1,7 +1,7 @@
-import { createConnection } from "./createConnection";
-import { IResponseDB } from "../routes/controllers/types";
+import { connectionToDatabase } from "./createConnection";
 import { z } from "zod";
 import { handleZod } from "../tools/handleZod";
+import { ResultSet } from "@libsql/client/.";
 
 export const serviceDB = {
     async getAll(codCompany: number) {
@@ -9,17 +9,14 @@ export const serviceDB = {
             const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
             codCompanySchema.parse(codCompany);
 
-            const db = await createConnection();
             const sql = `SELECT 
                             codService, nameService, price, durationMin, active, identificationColor
                         FROM Service
                         WHERE codCompany = ?;`;
-            const [result] = await db.query(sql, [codCompany]);
+            const result = await connectionToDatabase(sql, [codCompany] );
     
-            db.end();
             return result;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error;
         }
     },
@@ -28,17 +25,14 @@ export const serviceDB = {
             const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
             codCompanySchema.parse(codCompany);
 
-            const db = await createConnection();
             const sql = `SELECT 
                             codService, nameService, price, durationMin
                         FROM Service WHERE active = true
                         AND codCompany = ?;`;
-            const [result] = await db.query(sql, [codCompany]);
+            const result = await connectionToDatabase(sql, [codCompany] );
     
-            db.end();
             return result;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error;
         }
     },
@@ -51,22 +45,19 @@ export const serviceDB = {
             newServiceSchema.parse(newService);
 
             const { codCompany, codServices } = newService;
-            const db = await createConnection();
             const sql = `select 
                             codService, nameService, price, durationMin, active
                         from Service
                         where codService in( ${codServices.replace(/\s/g, '')} )
                         AND codCompany = ${codCompany};`;
-            const [result] = await db.query(sql);
+            const result = await connectionToDatabase(sql);
     
-            db.end();
             return result;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error;
         }
     },
-    async update(newService: IParamsUpdateService): Promise<IResponseDB> {
+    async update(newService: IParamsUpdateService): Promise<ResultSet> {
         try {
             const newServiceSchema = z.object({
                 codService: z.number(handleZod.params('CodService', 'número')),
@@ -80,7 +71,6 @@ export const serviceDB = {
             newServiceSchema.parse(newService);
 
             const { nameService, price, durationMin, active, identificationColor, codService, codCompany } = newService;
-            const db = await createConnection();
             const sql = `UPDATE Service SET
                             nameService = ?,
                             price = ?,
@@ -89,21 +79,14 @@ export const serviceDB = {
                             identificationColor = ?
                         WHERE codService = ?
                         AND codCompany = ?`;
-            const [result] = await db.query(sql, [nameService, price, durationMin, active, identificationColor, codService, codCompany]);
-    
-            if((result as any).affectedRows === 0) {
-                throw 'Houve algo erro, nenhum resultado(s) inserido(s)';
-            };
+            const result = await connectionToDatabase(sql, [nameService, price, durationMin, active, identificationColor, codService, codCompany] );
 
-            db.commit();
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },
-    async create(newService: IParamsNewService): Promise<IResponseDB> {
+    async create(newService: IParamsNewService): Promise<ResultSet> {
         try {
             const newServiceSchema = z.object({
                 nameService: z.string(handleZod.params('Nome de serviço', 'texto')).min(2, 'O campo Nome Serviço deve conter pelo menos 2 caractere(s)'),
@@ -116,23 +99,16 @@ export const serviceDB = {
             newServiceSchema.parse(newService);
 
             const { nameService, price, durationMin, active, identificationColor, codCompany } = newService;
-            const db = await createConnection();
             const sql = `INSERT INTO Service (nameService, price, durationMin, active, identificationColor, codCompany) VALUES 
                         (?, ?, ?, ?, ?, ?);`;
-            const [result] = await db.query(sql, [nameService, price, durationMin, (active ?? true), identificationColor, codCompany]);
-    
-            if((result as any).affectedRows === 0) {
-                throw 'Houve algo erro, nenhum resultado(s) inserido(s)';
-            };
+            const result = await connectionToDatabase(sql, [nameService, price, durationMin, (active ?? true), identificationColor, codCompany] );
 
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },
-    async delete(newService: IParamsDeleteService): Promise<IResponseDB> {
+    async delete(newService: IParamsDeleteService): Promise<ResultSet> {
         try {
             const newServiceSchema = z.object({
                 codService: z.number(handleZod.params('CodService', 'número')),
@@ -141,19 +117,13 @@ export const serviceDB = {
             newServiceSchema.parse(newService);
 
             const { codService, codCompany } = newService;
-            const db = await createConnection();
             const sql = `DELETE FROM Service 
                         WHERE codService = ?
                         AND codCompany = ?;`;
-            const [result] = await db.query(sql, [codService, codCompany]);
+            const result = await connectionToDatabase(sql, [codService, codCompany] );
             
-            if((result as any).affectedRows === 0) {
-                throw 'Houve algo erro, nenhum resultado(s) inserido(s)';
-            };
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },

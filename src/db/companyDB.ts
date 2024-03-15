@@ -1,24 +1,21 @@
 import { z } from 'zod';
-import { IErrorSQL, IResponseDB } from '../routes/controllers/types';
-import { createConnection } from './createConnection';
-import { ResultSetHeader } from 'mysql2';
+import { connectionToDatabase } from './createConnection';
+import { ResultSet } from '@libsql/client/.';
 import { handleZod } from '../tools/handleZod';
 
 export const companyDB = {
-    async get(id: string | number): Promise<IResponse[] | IErrorSQL> {
+    async get(id: string | number): Promise<IResponse[]> {
         try {
             const idSchema = z.number(handleZod.params('ID', 'número'));
             idSchema.parse(Number(id || 'a'));
 
-            const db = await createConnection();
-            const sql = `select codCompany, name, photo, numberWhatsApp, nameInstagram, address from Company
+            const sql = `select codCompany, name, photo, numberWhatsApp, nameInstagram, address 
+                        from Company
                         where codCompany = ?;`
-            const [result] = await db.query(sql, [id]) as any[];
-    
-            db.end();
-            return result.length ? result[0] : null;
+            const result = await connectionToDatabase(sql, [id]);
+            
+            return result[0] ?? result;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         }
     },
@@ -28,15 +25,12 @@ export const companyDB = {
             const EmailSchema = handleZod.email();
             EmailSchema.parse(email);
 
-            const db = await createConnection();
             const sql = `select codCompany, name, blocked, emailCompany, password
-                            from Company where emailCompany = ?;`
-            const [result] = await db.query(sql, [email]) as any[];
-    
-            db.end();
-            return result.length ? result[0] : null;
+                            from Company where emailCompany = ?;`;
+            const result = await connectionToDatabase(sql, [email]);
+            
+            return result[0] ?? result;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         }
     },
@@ -57,27 +51,18 @@ export const companyDB = {
             });
             newCompanySchema.parse({ newCompany });
 
-            const db = await createConnection();
-            const sql = `   INSERT INTO Client 
+            const sql = `   INSERT INTO Company 
                                 (name, photo, numberWhatsApp, nameInstagram, address, blocked, emailCompany, password) 
                             VALUES 
-                                (?, ?, ?, ?, ?, ?, ?, ?);`
-            const [result] = await db.query(sql, [name, (photo ?? ''), numberWhatsApp, (nameInstagram ?? ''), (address ?? ''), (blocked ?? false), emailCompany, password]);
-        
-            db.commit();
-            db.end();
-            
-            if((result as ResultSetHeader).affectedRows === 0) {
-                throw 'Houve algo erro, nenhum resultado(s) inserido(s)';
-            };
+                                (?, ?, ?, ?, ?, ?, ?, ?);`;
+            const result = await connectionToDatabase(sql, [name, (photo ?? ''), numberWhatsApp, (nameInstagram ?? ''), (address ?? ''), (blocked ?? false), emailCompany, password]);
 
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },
-    async update(newCompany: IResponse): Promise<IResponseDB> {
+    async update(newCompany: IResponse): Promise<ResultSet> {
         try {
             const { name, photo, numberWhatsApp, nameInstagram, address, codCompany } = newCompany;
 
@@ -94,7 +79,6 @@ export const companyDB = {
                 codCompany: Number(codCompany || 'a'),
             });
 
-            const db = await createConnection();
             const sql = `   UPDATE Company SET 
                             name = ?,
                             photo = ?,
@@ -102,18 +86,10 @@ export const companyDB = {
                             nameInstagram = ?,
                             address = ?
                             WHERE codCompany = ?;`
-            const [result] = await db.query(sql, [name, photo, numberWhatsApp, nameInstagram, address, codCompany]);
-        
-            db.commit();
-            db.end();
-            
-            if((result as ResultSetHeader).affectedRows === 0) {
-                throw 'Houve algo erro, nenhum resultado(s) inserido(s)';
-            };
+            const result = await connectionToDatabase(sql, [name, photo, numberWhatsApp, nameInstagram, address, codCompany]);
 
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },

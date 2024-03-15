@@ -8,10 +8,6 @@ export const timetableController = {
             const {id} = req.params;
             const response = await timetableDB.getAll(Number(id));
     
-            if((response as any).errno) {
-                res.json({ error: response });
-                return;
-            };
             res.json(response);
             
         } catch (error) {
@@ -22,10 +18,6 @@ export const timetableController = {
         try {
             const response = await timetableDB.get(req.body);
     
-            if((response as any).errno) {
-                res.json({ error: response });
-                return;
-            };
             res.json(response);
         } catch (error) {
             res.json({error});
@@ -35,10 +27,6 @@ export const timetableController = {
         try {
             const response = await timetableDB.getActiveOrInactive(req.body);
     
-            if((response as any).errno) {
-                res.json({ error: response });
-                return;
-            };
             res.json(response);
         } catch (error) {
             res.json({error});
@@ -48,10 +36,6 @@ export const timetableController = {
         try {
             const response = await timetableDB.updateTimetable(req.body);
 
-            if((response as IErrorSQL).errno) {
-                res.json({ error: response });
-                return;
-            };
             res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
         } catch (error) {
             res.json({error});

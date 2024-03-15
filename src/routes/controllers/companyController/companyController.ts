@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { IErrorSQL } from "../types";
 import { companyDB } from "../../../db/companyDB";
 
 export const companyController = {
@@ -9,7 +8,7 @@ export const companyController = {
     
             const response = await companyDB.get(id);
     
-            if((response as IErrorSQL).errno) {
+            if((response as any).errno) {
                 res.json({ error: response });
                 return;
             };
@@ -23,11 +22,11 @@ export const companyController = {
         try {
             const response = await companyDB.update(req.body);
         
-            if((response as IErrorSQL).errno) {
+            if((response as any).errno) {
                 res.json({ error: response });
                 return;
             };
-            res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
+            res.status(200).json({ message: `${response.rowsAffected} registro(s) atualizado(s)` });
         } catch (error) {
             res.json({ error });
         }

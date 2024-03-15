@@ -41,7 +41,6 @@ export const authController = {
             
             res.json({ token: newToken, client: encryptClient });
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         }
     },
@@ -69,7 +68,6 @@ export const authController = {
 
             res.json({status: true});
         } catch(error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         };
     },
@@ -105,7 +103,6 @@ export const authController = {
             
             res.json({ token: newToken, company: encryptClient });
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         }
     },
@@ -129,7 +126,6 @@ export const authController = {
 
             res.json({status: true});
         } catch(error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         };
     },
@@ -156,7 +152,6 @@ export const authController = {
             res.json({status: true});
         } catch(error) {
             console.error(error)
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         };
     },
@@ -190,7 +185,6 @@ export const authController = {
             console.error(error);
             if((error as any).code === 'ERR_JWT_EXPIRED') error = 'Sua seção expirou, por favor tente gerar outro link';
             
-            if((error as any)?.issues) error = (error as any).issues[0];
             res.json({error});
         };
     },

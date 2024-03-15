@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { IErrorSQL } from "../types";
 import { configAgendaDB } from "../../../db/configAgendaDB";
 
 export const configAgendaController = {
@@ -8,10 +7,6 @@ export const configAgendaController = {
             const { id } = req.params;
             const response = await configAgendaDB.getAll(Number(id));
     
-            if((response as IErrorSQL).errno) {
-                res.json({ error: response });
-                return;
-            };
             res.json(response);
         } catch (error) {
             res.json({error});
@@ -21,10 +16,6 @@ export const configAgendaController = {
         try {
             const response = await configAgendaDB.get(req.body);
     
-            if((response as IErrorSQL).errno) {
-                res.json({ error: response });
-                return;
-            };
             res.json(response);
         } catch (error) {
             res.json({error});
@@ -34,10 +25,6 @@ export const configAgendaController = {
         try {
             const response = await configAgendaDB.update(req.body);
         
-            if((response as IErrorSQL).errno) {
-                res.json({ error: response });
-                return;
-            };
             res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
         } catch (error) {
             res.json({error});

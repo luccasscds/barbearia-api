@@ -1,32 +1,28 @@
-import { ZodError, z } from 'zod';
-import { IErrorSQL, IResponseDB } from '../routes/controllers/types';
-import { createConnection } from './createConnection';
-import { ResultSetHeader } from 'mysql2';
+import { z } from 'zod';
+import { connectionToDatabase } from './createConnection';
 import { handleZod } from '../tools/handleZod';
+import { ResultSet } from '@libsql/client/.';
 
 export const clientDB = {
-    async getAll(codCompany: number): Promise<IResponseClient[] | IErrorSQL> {
+    async getAll(codCompany: number): Promise<IResponseClient[]> {
         try {
             const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
             codCompanySchema.parse(codCompany);
 
-            const db = await createConnection();
             const sql = `select codClient, nameClient, emailClient, numberPhone, blocked
                         from Client 
                         where isADM = false
                         and blocked = false
                         AND codCompany = ?;`
-            const [result] = await db.query(sql, [codCompany]);
+            const result = await connectionToDatabase(sql, [codCompany] );
     
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         }
     },
 
-    async getBlockedOrNo(newClient: IParamsGetBlockedOrNo): Promise<IResponseClient[] | IErrorSQL> {
+    async getBlockedOrNo(newClient: IParamsGetBlockedOrNo): Promise<IResponseClient[]> {
         try {
             const UserSchema = z.object({
                 blocked: z.boolean(handleZod.params('Bloqueado', 'boolean')),
@@ -35,37 +31,30 @@ export const clientDB = {
             UserSchema.parse(newClient);
 
             const { blocked, codCompany } = newClient;
-            const db = await createConnection();
             const sql = `select codClient, nameClient, emailClient, numberPhone, blocked
                         from Client 
                         where blocked = ?
-                        and isADM = false
                         AND codCompany = ?;`
-            const [result] = await db.query(sql, [blocked, codCompany]);
+            const result = await connectionToDatabase(sql, [blocked, codCompany] );
     
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         }
     },
 
-    async get(id: number): Promise<IResponseClient[] | IErrorSQL> {
+    async get(id: number): Promise<IResponseClient[]> {
         try {
             const idSchema = z.number();
             idSchema.parse(id);
 
-            const db = await createConnection();
             const sql = `   select codClient, nameClient, emailClient, numberPhone, blocked
                             from Client 
                             where codClient = ?;`
-            const [result] = await db.query(sql, [id]) as any[];
+            const result = await connectionToDatabase(sql, [id] );
     
-            db.end();
-            return result.length ? result[0] : null;
+            return result[0] ?? result;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error;
         }
     },
@@ -75,22 +64,18 @@ export const clientDB = {
             const EmailSchema = handleZod.email();
             EmailSchema.parse(email);
 
-            const db = await createConnection();
             const sql = `select codClient, nameClient, emailClient, passwordClient, isADM, blocked, codCompany
                             FROM Client
                             WHERE emailClient = ?;`
-            const [result] = await db.query(sql, [email]) as any[];
+            const result = await connectionToDatabase(sql, [email] );
     
-            db.end();
-            return result.length ? result[0] : null;
+            return result[0] ?? result;
         } catch (error) {
-            const errorZod = (error as unknown as ZodError);
-            if(errorZod?.issues.length) error = errorZod.issues[0];
             throw error as any;
         }
     },
     
-    async new(newClient: IParamsNewClient): Promise<IResponseDB> {
+    async new(newClient: IParamsNewClient): Promise<ResultSet> {
         try {
             const { email, name, password, isADM, numberPhone, blocked, codCompany } = newClient;
 
@@ -105,26 +90,22 @@ export const clientDB = {
             });
             UserSchema.parse(newClient);
 
-            if(await clientDB.isExist(email)) throw 'o Email inserido já está cadastrado';
+            if(await clientDB.isExist(email)) throw 'O Email inserido já está cadastrado';
             
-            const db = await createConnection();
             const sql = `INSERT INTO Client 
                             (nameClient, emailClient, passwordClient, isADM, numberPhone, blocked, codCompany) 
                         VALUES 
                             (?, ?, ?, ?, ?, ?, ?);
             `;
-            const [result] = await db.query(sql, [name, email, (password ?? ''), (isADM ?? false), (numberPhone ?? ''), (blocked ?? false), codCompany ]);
+            const result = await connectionToDatabase(sql, [name, email, (password ?? ''), (isADM ?? false), (numberPhone ?? ''), (blocked ?? false), codCompany] );
 
-            db.commit();
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },
     
-    async update(newClient: IParamsUpdateClient): Promise<IResponseDB> {
+    async update(newClient: IParamsUpdateClient): Promise<ResultSet> {
         try {
             const { id, name, email, blocked, password, codCompany } = newClient;
 
@@ -138,7 +119,6 @@ export const clientDB = {
             });
             UserSchema.parse(newClient);
 
-            const db = await createConnection();
             let sql = '';
             let result;
 
@@ -150,7 +130,7 @@ export const clientDB = {
                                 blocked = ?
                                 WHERE codClient = ?
                                 AND codCompany = ?;`
-                result = await db.query(sql, [name, email, password, blocked, id, codCompany]);
+                result = await connectionToDatabase(sql, [name, email, password, blocked, id, codCompany] );
             } else {
                 sql = `   UPDATE Client SET 
                                 nameClient = ?,
@@ -158,23 +138,16 @@ export const clientDB = {
                                 blocked = ?
                                 WHERE codClient = ?
                                 AND codCompany = ?;`
-                result = await db.query(sql, [name, email, blocked, id, codCompany]);
+                result = await connectionToDatabase(sql, [name, email, blocked, id, codCompany] );
             };
 
-            if((result[0] as ResultSetHeader).affectedRows === 0) {
-                throw 'Houve algo erro, nenhum resultado(s) inserido(s)';
-            };
-
-            db.commit();
-            db.end();
-            return result[0] as any;
+            return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },
     
-    async delete(newClient: IParamsDelete): Promise<IResponseDB> {
+    async delete(newClient: IParamsDelete): Promise<ResultSet> {
         try {
             const { codClient, codCompany } = newClient;
             const UserSchema = z.object({
@@ -183,21 +156,13 @@ export const clientDB = {
             });
             UserSchema.parse(newClient);
 
-            const db = await createConnection();
             const sql = `DELETE FROM Client 
                         WHERE codClient = ?
                         AND codCompany = ?;`
-            const [result] = await db.query(sql, [codClient, codCompany]);
-        
-            if((result as ResultSetHeader).affectedRows === 0) {
-                throw 'Houve algo erro, nenhum resultado(s) inserido(s)';
-            };
+            const result = await connectionToDatabase(sql, [codClient, codCompany] );
 
-            db.commit();
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },
@@ -206,16 +171,12 @@ export const clientDB = {
         try {
             if(!email) return;
 
-            const db = await createConnection();
             const sql = `SELECT 1 FROM Client
                         WHERE emailClient = ?`;
-            const [result] = await db.query(sql, [email]);
+            const result = await connectionToDatabase(sql, [email] );
         
-            db.commit();
-            db.end();
             return result as any;
         } catch (error) {
-            if((error as any)?.issues) error = (error as any).issues[0];
             throw error as any;
         };
     },
