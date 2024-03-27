@@ -2,18 +2,19 @@ import { z } from 'zod';
 import { connectionToDatabase } from './createConnection';
 import { handleZod } from '../tools/handleZod';
 import { ResultSet } from '@libsql/client/.';
+import { toolsSQL } from '../tools/toolsSQL';
 
 export const clientDB = {
     async getAll(codCompany: number): Promise<IResponseClient[]> {
         try {
-            const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
+            const codCompanySchema = handleZod.number('CodCompany');
             codCompanySchema.parse(codCompany);
 
-            const sql = `select codClient, nameClient, emailClient, numberPhone, blocked
-                        from Client 
-                        where isADM = false
-                        and blocked = false
-                        AND codCompany = ?;`
+            const sql = `select c.codClient, c.nameClient, c.emailClient, c.numberPhone, c.blocked
+                        from Client c, CompanyClient cc
+                        WHERE c.blocked = false
+                        AND c.codClient = cc.codClient
+                        AND cc.codCompany = ?;`
             const result = await connectionToDatabase(sql, [codCompany] );
     
             return result as any;
@@ -25,16 +26,17 @@ export const clientDB = {
     async getBlockedOrNo(newClient: IParamsGetBlockedOrNo): Promise<IResponseClient[]> {
         try {
             const UserSchema = z.object({
-                blocked: z.boolean(handleZod.params('Bloqueado', 'boolean')),
-                codCompany: z.number(handleZod.params('codCompany', 'número')),
+                blocked: handleZod.boolean('Bloqueado'),
+                codCompany: handleZod.number('codCompany'),
             });
             UserSchema.parse(newClient);
 
             const { blocked, codCompany } = newClient;
-            const sql = `select codClient, nameClient, emailClient, numberPhone, blocked
-                        from Client 
-                        where blocked = ?
-                        AND codCompany = ?;`
+            const sql = `select c.codClient, c.nameClient, c.emailClient, c.numberPhone, c.blocked
+                        from Client c, CompanyClient cc
+                        where c.blocked = ?
+                        AND c.codClient = cc.codClient
+                        AND cc.codCompany = ?;`
             const result = await connectionToDatabase(sql, [blocked, codCompany] );
     
             return result as any;
@@ -43,33 +45,33 @@ export const clientDB = {
         }
     },
 
-    async get(id: number): Promise<IResponseClient[]> {
+    async get(id: number): Promise<IResponseClient> {
         try {
-            const idSchema = z.number();
+            const idSchema = handleZod.number('codClient');
             idSchema.parse(id);
 
             const sql = `   select codClient, nameClient, emailClient, numberPhone, blocked
                             from Client 
                             where codClient = ?;`
-            const result = await connectionToDatabase(sql, [id] );
+            const [result] = await connectionToDatabase(sql, [id] ) as any;
     
-            return result[0] ?? result;
+            return result;
         } catch (error) {
-            throw error;
+            throw error as any;
         }
     },
 
-    async getByEmail(email: string): Promise<IResponseClientByEmail> {
+    async getByEmail(email: string): Promise<IResponseClientByEmail | undefined> {
         try {
             const EmailSchema = handleZod.email();
             EmailSchema.parse(email);
 
-            const sql = `select codClient, nameClient, emailClient, passwordClient, isADM, blocked, codCompany
+            const sql = `select codClient, nameClient, emailClient, passwordClient, blocked
                             FROM Client
                             WHERE emailClient = ?;`
-            const result = await connectionToDatabase(sql, [email] );
+            const [result] = await connectionToDatabase(sql, [email.toLowerCase()] ) as any;
     
-            return result[0] ?? result;
+            return result;
         } catch (error) {
             throw error as any;
         }
@@ -77,27 +79,38 @@ export const clientDB = {
     
     async new(newClient: IParamsNewClient): Promise<ResultSet> {
         try {
-            const { email, name, password, isADM, numberPhone, blocked, codCompany } = newClient;
+            const { email, name, password, numberPhone, blocked, codCompany } = newClient;
 
             const UserSchema = z.object({
-                name: z.string(handleZod.params('Nome', 'texto')).min(2, { message: 'O campo Nome deve conter pelo menos 2 caractere(s)' }),
+                name: handleZod.string('Nome', {min: 2}),
                 email: handleZod.email().or(z.string().max(0)),
-                password: z.string(handleZod.params('Senha', 'texto')).min(1, 'O campo Senha deve conter pelo menos 1 caractere(s)').optional().nullable(),
-                isADM: z.boolean(handleZod.params('isADM', 'boolean')).optional().nullable(),
-                numberPhone: z.string(handleZod.params('Número de Telefone', 'texto')).min(11, {message: 'O campo Telefone deve conter pelo menos 11 caractere(s)'}).max(14, {message: 'O campo Telefone deve conter máximo 14 caractere(s)'}).or(z.string().max(0)),
-                blocked: z.boolean(handleZod.params('Bloqueado', 'boolean')).optional().nullable(),
-                codCompany: z.number(handleZod.params('codCompany', 'número')),
+                password: handleZod.string('Senha', {min: 1}).optional().nullable(),
+                numberPhone: handleZod.string('Número de Telefone', {min: 11, max: 14}).or(handleZod.string('Número de Telefone', {max: 0})),
+                blocked: handleZod.boolean('Bloqueado').optional().nullable(),
+                codCompany: handleZod.number('codCompany'),
             });
             UserSchema.parse(newClient);
 
-            if(await clientDB.isExist(email)) throw 'O Email inserido já está cadastrado';
+            const isExist = await toolsSQL.isExist({
+                field: 'emailClient',
+                value: email,
+                table: 'Client',
+            });
+            if(isExist) throw 'O Email inserido já está cadastrado. Tente outro por favor';
             
             const sql = `INSERT INTO Client 
-                            (nameClient, emailClient, passwordClient, isADM, numberPhone, blocked, codCompany) 
+                            (nameClient, emailClient, passwordClient, numberPhone, blocked) 
                         VALUES 
-                            (?, ?, ?, ?, ?, ?, ?);
+                            (?, ?, ?, ?, ?);
             `;
-            const result = await connectionToDatabase(sql, [name, email, (password ?? ''), (isADM ?? false), (numberPhone ?? ''), (blocked ?? false), codCompany] );
+            const result = await connectionToDatabase(sql, [name, email.toLowerCase(), (password ?? ''), (numberPhone ?? ''), (blocked ?? false)] ) as ResultSet;
+            // @ts-ignore
+            result.lastInsertRowid = Number(result.lastInsertRowid);
+            await clientDB.createCompanyClient({
+                // @ts-ignore
+                codClient: result.lastInsertRowid!,
+                codCompany
+            });
 
             return result as any;
         } catch (error) {
@@ -107,20 +120,21 @@ export const clientDB = {
     
     async update(newClient: IParamsUpdateClient): Promise<ResultSet> {
         try {
-            const { id, name, email, blocked, password, codCompany } = newClient;
+            const { id, name, email, blocked, password } = newClient;
 
             const UserSchema = z.object({
-                id: z.number(handleZod.params('ID', 'número')),
-                name: z.string(handleZod.params('Nome', 'texto')).min(2, { message: 'O campo Nome deve conter pelo menos 2 caractere(s)' }),
+                id: handleZod.number('codClient'),
+                name: handleZod.string('Nome', { min: 2 }),
                 email: handleZod.email(),
-                blocked: z.boolean(handleZod.params('Bloqueado', 'boolean')),
-                password: z.string(handleZod.params('Senha', 'texto')).optional(),
-                codCompany: z.number(handleZod.params('codCompany', 'número')),
+                blocked: handleZod.boolean('Bloqueado'),
+                password: handleZod.string('Senha').optional(),
             });
             UserSchema.parse(newClient);
 
             let sql = '';
             let result;
+
+            // depois fazer uma verificação se o update vai atualizar email já existente
 
             if(password) {
                 sql = `   UPDATE Client SET 
@@ -128,17 +142,15 @@ export const clientDB = {
                                 emailClient = ?,
                                 passwordClient = ?,
                                 blocked = ?
-                                WHERE codClient = ?
-                                AND codCompany = ?;`
-                result = await connectionToDatabase(sql, [name, email, password, blocked, id, codCompany] );
+                                WHERE codClient = ?;`
+                result = await connectionToDatabase(sql, [name, email, password, blocked, id] );
             } else {
                 sql = `   UPDATE Client SET 
                                 nameClient = ?,
                                 emailClient = ?,
                                 blocked = ?
-                                WHERE codClient = ?
-                                AND codCompany = ?;`
-                result = await connectionToDatabase(sql, [name, email, blocked, id, codCompany] );
+                                WHERE codClient = ?;`
+                result = await connectionToDatabase(sql, [name, email, blocked, id] );
             };
 
             return result as any;
@@ -151,15 +163,21 @@ export const clientDB = {
         try {
             const { codClient, codCompany } = newClient;
             const UserSchema = z.object({
-                codClient: z.number(handleZod.params('codClient', 'número')),
-                codCompany: z.number(handleZod.params('codCompany', 'número')),
+                codClient: handleZod.number('codClient'),
+                codCompany: handleZod.number('codCompany'),
             });
             UserSchema.parse(newClient);
 
-            const sql = `DELETE FROM Client 
-                        WHERE codClient = ?
-                        AND codCompany = ?;`
-            const result = await connectionToDatabase(sql, [codClient, codCompany] );
+            // const sql = `DELETE FROM Client 
+            //             WHERE codClient = ?;`
+            // const result = await connectionToDatabase(sql, [codClient] );
+
+            const result = await connectionToDatabase(`
+                DELETE FROM CompanyClient 
+                WHERE codClient = ?
+                AND codCompany = ?;`,
+                [codClient, codCompany]
+            );
 
             return result as any;
         } catch (error) {
@@ -167,19 +185,46 @@ export const clientDB = {
         };
     },
 
-    async isExist(email: string): Promise<number|undefined> {
+    async isExistEmailOnCompanyClient(email: string, codCompany: number) {
         try {
-            if(!email) return;
-
-            const sql = `SELECT 1 FROM Client
-                        WHERE emailClient = ?`;
-            const result = await connectionToDatabase(sql, [email] );
-        
-            return result as any;
+            const UserSchema = z.object({
+                email: handleZod.email(),
+                codCompany: handleZod.number('codCompany'),
+            });
+            UserSchema.parse({ email, codCompany });
+    
+            const [existEmail] = await connectionToDatabase(`
+                select count(c.codClient) exist
+                from Client c, CompanyClient cc
+                WHERE c.codClient = cc.codClient
+                AND c.emailClient = ?
+                AND cc.codCompany = ?;
+            `, [ email.toLowerCase(), codCompany ]) as any;
+    
+            return !!existEmail.exist;
         } catch (error) {
             throw error as any;
-        };
+        }
     },
+
+    async createCompanyClient(values: { codClient: number, codCompany: number }) {
+        try {
+            const { codClient, codCompany } = values;
+            const UserSchema = z.object({
+                codClient: handleZod.number('codClient').or(handleZod.bigint('codClient')),
+                codCompany: handleZod.number('codCompany'),
+            });
+            UserSchema.parse(values);
+
+            const sql = `INSERT INTO CompanyClient 
+                            (codClient, codCompany)
+                        VALUES 
+                            (?, ?);`;
+            await connectionToDatabase(sql, [codClient, codCompany] );
+        } catch (error) {
+            throw error as any;
+        }
+    }
 }
 
 interface IResponseClient {
@@ -194,16 +239,13 @@ export interface IResponseClientByEmail {
     nameClient: string,
     emailClient: string,
     passwordClient?: string,
-    isADM: boolean,
     blocked: boolean,
-    codCompany: number,
 }
 
 interface IParamsNewClient {
     name: string,
     email: string,
     password?: string,
-    isADM?: boolean,
     numberPhone?: string,
     blocked?: boolean,
     codCompany: number,
@@ -215,7 +257,6 @@ interface IParamsUpdateClient {
     email: string,
     blocked: boolean,
     password?: string,
-    codCompany: number,
 }
 
 interface IParamsGetBlockedOrNo {

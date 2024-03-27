@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { tagsDB } from "../../../db/tagsDB";
+import { handleError } from "../../../tools/handleError";
 
 export const tagsController = {
     async getAll(req: Request, res: Response) {
@@ -8,7 +9,7 @@ export const tagsController = {
             
             res.json(response);
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
         }
     },
 };

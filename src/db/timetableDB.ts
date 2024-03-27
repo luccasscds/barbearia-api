@@ -5,7 +5,7 @@ import { handleZod } from "../tools/handleZod";
 export const timetableDB = {
     async getAll(codCompany: number) {
         try {
-            const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
+            const codCompanySchema = handleZod.number('CodCompany');
             codCompanySchema.parse(codCompany);
 
             const sql = `select 
@@ -16,15 +16,15 @@ export const timetableDB = {
     
             return result;
         } catch (error) {
-            throw error;
+            throw error as any;
         }
     },
     async get(newTime: IParamsGetTime) {
         try {
             const { codTime, codCompany } = newTime;
             const newTimeSchema = z.object({
-                codTime: z.number(handleZod.params('CodTime', 'número')),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codTime: handleZod.number('CodTime'),
+                codCompany: handleZod.number('CodCompany'),
             });
             newTimeSchema.parse(newTime);
 
@@ -37,7 +37,7 @@ export const timetableDB = {
     
             return result;
         } catch (error) {
-            throw error;
+            throw error as any;
         }
     },
     async getActiveOrInactive(newTime: IParamsGetActiveOrInactiveTime) {
@@ -45,9 +45,9 @@ export const timetableDB = {
             const { active, codCompany, codTime } = newTime;
 
             const newTimeSchema = z.object({
-                codTime: z.number(handleZod.params('CodTime', 'número')),
-                active: z.boolean(handleZod.params('Ativo', 'boolean')),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codTime: handleZod.number('CodTime'),
+                active: handleZod.boolean('Ativo'),
+                codCompany: handleZod.number('CodCompany'),
             });
             newTimeSchema.parse(newTime);
 
@@ -61,7 +61,7 @@ export const timetableDB = {
     
             return result;
         } catch (error) {
-            throw error;
+            throw error as any;
         }
     },
 
@@ -69,13 +69,13 @@ export const timetableDB = {
         try {
             const { active, time01, time02, time03, time04, codTime, codCompany } = newTime;
             const newTimeSchema = z.object({
-                codTime: z.number(handleZod.params('CodTime', 'número')),
-                active: z.boolean(handleZod.params('Ativo', 'boolean')),
-                time01: z.string(handleZod.params('time01', 'texto')).nullable(),
-                time02: z.string(handleZod.params('time02', 'texto')).nullable(),
-                time03: z.string(handleZod.params('time03', 'texto')).nullable(),
-                time04: z.string(handleZod.params('time04', 'texto')).nullable(),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codTime: handleZod.number('CodTime'),
+                active: handleZod.boolean('Ativo'),
+                time01: handleZod.string('time01').nullable(),
+                time02: handleZod.string('time02').nullable(),
+                time03: handleZod.string('time03').nullable(),
+                time04: handleZod.string('time04').nullable(),
+                codCompany: handleZod.number('CodCompany'),
             });
             newTimeSchema.parse(newTime);
 
@@ -95,20 +95,20 @@ export const timetableDB = {
         };
     },
 
-    async insertData(codCompany: number) {
+    async create(codCompany: number) {
         try {
-            const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
+            const codCompanySchema = handleZod.number('CodCompany');
             codCompanySchema.parse(codCompany);
 
             const sql = `   INSERT INTO Timetable (day, codCompany, active, time01, time02, time03, time04) VALUES
-                            ('Segunda-feira',   ?, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
-                            ('Terça-feira',     ?, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
-                            ('Quarta-feira',    ?, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
-                            ('Quinta-feira',    ?, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
-                            ('Sexta-feira',     ?, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
-                            ('Sábado',          ?, true, '09:00:00',    '17:00:00', '',         ''),
-                            ('Domingo',         ?, false, '',           '',         '',         '');`;
-            const result = await connectionToDatabase(sql, [codCompany] );
+                            ('Segunda-feira',   ${codCompany}, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
+                            ('Terça-feira',     ${codCompany}, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
+                            ('Quarta-feira',    ${codCompany}, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
+                            ('Quinta-feira',    ${codCompany}, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
+                            ('Sexta-feira',     ${codCompany}, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
+                            ('Sábado',          ${codCompany}, true, '09:00:00',    '17:00:00', '',         ''),
+                            ('Domingo',         ${codCompany}, false, '',           '',         '',         '');`;
+            const result = await connectionToDatabase(sql, undefined, true);
         
             return result as any;
         } catch (error) {

@@ -7,7 +7,7 @@ export const eventDB = {
     async getEvent(newEvent: IParamsGetEvent): Promise<any> {
         try {
             const newEventSchema = z.object({
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codCompany: handleZod.number('CodCompany'),
                 date: handleZod.date(),
             });
             newEventSchema.parse(newEvent);
@@ -72,15 +72,15 @@ export const eventDB = {
     
             return result;
         } catch (error) {
-            throw error;
+            throw error as any;
         }
     },
     async getEventByClient(newEvent: IParamsGetEventByClient): Promise<any> {
         try {
             const { codClient, codCompany } = newEvent;
             const newEventSchema = z.object({
-                codClient: z.number(handleZod.params('CodClient', 'número')),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codClient: handleZod.number('CodClient'),
+                codCompany: handleZod.number('CodCompany'),
             });
             newEventSchema.parse(newEvent);
 
@@ -124,15 +124,15 @@ export const eventDB = {
     
             return result;
         } catch (error) {
-            throw error;
+            throw error as any;
         }
     },
     async getEventByMonth(newEvent: IParamsGetEventByMonth): Promise<any> {
         try {
             const { codMonth, codCompany } = newEvent;
             const newEventSchema = z.object({
-                codMonth: z.number(handleZod.params('CodClient', 'número')),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codMonth: handleZod.number('codMonth'),
+                codCompany: handleZod.number('CodCompany'),
             });
             newEventSchema.parse(newEvent);
 
@@ -140,9 +140,9 @@ export const eventDB = {
                         FROM VirtualLine 
                         WHERE cast(strftime('%m', dateVirtual) as number) = ?
                         AND codCompany = ?;`;
-            const result = await connectionToDatabase(sql, [codMonth, codCompany] );
+            const result = await connectionToDatabase(sql, [codMonth, codCompany] ) as any;
     
-            return result as any;
+            return result;
         } catch (error) {
             throw error as any;
         }
@@ -150,14 +150,14 @@ export const eventDB = {
     async createEvent(newEvent: IParamsCreateEvent): Promise<ResultSet> {
         try {
             const EventSchema = z.object({
-                codClient: z.number(handleZod.params('CodClient', 'número')),
-                codService: z.number(handleZod.params('CodService', 'número')),
-                codStatus: z.number(handleZod.params('CodStatus', 'número')),
+                codClient: handleZod.number('CodClient'),
+                codService: handleZod.number('CodService'),
+                codStatus: handleZod.number('CodStatus'),
                 dateVirtual: handleZod.date(),
                 startTime: handleZod.time('Tempo inicial'),
                 endTime: handleZod.time('Tempo final'),
-                codPayment: z.number(handleZod.params('CodPayment', 'número')),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codPayment: handleZod.number('CodPayment'),
+                codCompany: handleZod.number('CodCompany'),
             });
             EventSchema.parse(newEvent);
 
@@ -176,14 +176,14 @@ export const eventDB = {
     async updateEvent(newEvent: IParamsUpdateEvent): Promise<ResultSet> {
         try {
             const EventSchema = z.object({
-                codClient: z.number(handleZod.params('CodClient', 'número')),
-                codService: z.number(handleZod.params('CodService', 'número')),
-                codStatus: z.number(handleZod.params('CodStatus', 'número')),
+                codClient: handleZod.number('CodClient'),
+                codService: handleZod.number('CodService'),
+                codStatus: handleZod.number('CodStatus'),
                 dateVirtual: handleZod.date(),
                 startTime: handleZod.time('Tempo inicial'),
                 endTime: handleZod.time('Tempo final'),
-                codPayment: z.number(handleZod.params('CodPayment', 'número')),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codPayment: handleZod.number('CodPayment'),
+                codCompany: handleZod.number('CodCompany'),
             });
             EventSchema.parse(newEvent);
 
@@ -208,10 +208,10 @@ export const eventDB = {
     async deleteEvent(newEvent: IParamsDeleteEvent): Promise<ResultSet> {
         try {
             const EventSchema = z.object({            
-                codClient: z.number(handleZod.params('CodClient', 'número')),
+                codClient: handleZod.number('CodClient'),
                 dateVirtual: handleZod.date(),
                 startTime: handleZod.time('Tempo inicial'),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codCompany: handleZod.number('CodCompany'),
             });
             EventSchema.parse(newEvent);
 
@@ -233,7 +233,7 @@ export const eventDB = {
         try {
             const EventSchema = z.object({            
                 codVirtual: z.number(handleZod.params('CodVirtual', 'array de número')).array(),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codCompany: handleZod.number('CodCompany'),
             });
             EventSchema.parse(newEvent);
 

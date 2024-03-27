@@ -1,8 +1,8 @@
-import { IErrorSQL } from '../routes/controllers/types';
+import { handleError } from '../tools/handleError';
 import { connectionToDatabase } from './createConnection';
 
 export const tagsDB = {
-    async getAll(): Promise<IResponseTags[] | IErrorSQL> {
+    async getAll(): Promise<IResponseTags[]> {
         try {
             const sql = `select codStatus, name
                         from Status;`
@@ -28,7 +28,7 @@ export const tagsDB = {
         
             return result as any;
         } catch (error) {
-            return error as any;
+            throw error as any;
         };
     }
 }

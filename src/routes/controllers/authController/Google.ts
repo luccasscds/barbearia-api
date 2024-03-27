@@ -31,7 +31,6 @@ export const Google = {
                 });
             });
             if(!accessToken) throw 'Error Google, sem token';
-            console.log('accessToken', accessToken);
             return accessToken;
         } catch (error) {
             throw error;

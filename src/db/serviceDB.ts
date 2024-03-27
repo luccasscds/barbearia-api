@@ -6,7 +6,7 @@ import { ResultSet } from "@libsql/client/.";
 export const serviceDB = {
     async getAll(codCompany: number) {
         try {
-            const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
+            const codCompanySchema = handleZod.number('CodCompany');
             codCompanySchema.parse(codCompany);
 
             const sql = `SELECT 
@@ -17,12 +17,12 @@ export const serviceDB = {
     
             return result;
         } catch (error) {
-            throw error;
+            throw error as any;
         }
     },
     async getAllActive(codCompany: number) {
         try {
-            const codCompanySchema = z.number(handleZod.params('CodCompany', 'número'));
+            const codCompanySchema = handleZod.number('CodCompany');
             codCompanySchema.parse(codCompany);
 
             const sql = `SELECT 
@@ -33,14 +33,14 @@ export const serviceDB = {
     
             return result;
         } catch (error) {
-            throw error;
+            throw error as any;
         }
     },
     async get(newService: IParamsGetsService) {
         try {
             const newServiceSchema = z.object({
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
-                codServices: z.string(handleZod.params('CodServices', 'texto')),
+                codCompany: handleZod.number('CodCompany'),
+                codServices: handleZod.string('CodServices'),
             });
             newServiceSchema.parse(newService);
 
@@ -54,19 +54,19 @@ export const serviceDB = {
     
             return result;
         } catch (error) {
-            throw error;
+            throw error as any;
         }
     },
     async update(newService: IParamsUpdateService): Promise<ResultSet> {
         try {
             const newServiceSchema = z.object({
-                codService: z.number(handleZod.params('CodService', 'número')),
-                nameService: z.string(handleZod.params('Nome de serviço', 'texto')).min(2, 'O campo Nome Serviço deve conter pelo menos 2 caractere(s)'),
-                price: z.number(handleZod.params('Preço', 'número')),
-                durationMin: z.number(handleZod.params('Duração em min', 'número')),
-                active: z.boolean(handleZod.params('Ativo', 'boolean')),
-                identificationColor: z.string(handleZod.params('Código da cor', 'texto')).nullable(),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codService: handleZod.number('CodService'),
+                nameService: handleZod.string('Nome de serviço', {min: 2}),
+                price: handleZod.number('Preço'),
+                durationMin: handleZod.number('Duração em min'),
+                active: handleZod.boolean('Ativo'),
+                identificationColor: handleZod.string('Código da cor').nullable(),
+                codCompany: handleZod.number('CodCompany'),
             });
             newServiceSchema.parse(newService);
 
@@ -89,12 +89,12 @@ export const serviceDB = {
     async create(newService: IParamsNewService): Promise<ResultSet> {
         try {
             const newServiceSchema = z.object({
-                nameService: z.string(handleZod.params('Nome de serviço', 'texto')).min(2, 'O campo Nome Serviço deve conter pelo menos 2 caractere(s)'),
-                price: z.number(handleZod.params('Preço', 'número')),
-                durationMin: z.number(handleZod.params('Duração em min', 'número')),
-                active: z.boolean(handleZod.params('Ativo', 'boolean')).optional(),
-                identificationColor: z.string(handleZod.params('Código da cor', 'texto')).nullable(),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                nameService: handleZod.string('Nome de serviço', {min: 2}),
+                price: handleZod.number('Preço'),
+                durationMin: handleZod.number('Duração em min'),
+                active: handleZod.boolean('Ativo').optional(),
+                identificationColor: handleZod.string('Código da cor').nullable(),
+                codCompany: handleZod.number('CodCompany'),
             });
             newServiceSchema.parse(newService);
 
@@ -111,8 +111,8 @@ export const serviceDB = {
     async delete(newService: IParamsDeleteService): Promise<ResultSet> {
         try {
             const newServiceSchema = z.object({
-                codService: z.number(handleZod.params('CodService', 'número')),
-                codCompany: z.number(handleZod.params('CodCompany', 'número')),
+                codService: handleZod.number('CodService'),
+                codCompany: handleZod.number('CodCompany'),
             });
             newServiceSchema.parse(newService);
 

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { serviceDB } from "../../../db/serviceDB";
+import { handleError } from "../../../tools/handleError";
 
 export const serviceController = {
     async getAll(req: Request, res: Response) {
@@ -9,7 +10,7 @@ export const serviceController = {
     
             res.json(response);
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
         }
     },
     async getAllActive(req: Request, res: Response) {
@@ -19,7 +20,7 @@ export const serviceController = {
     
             res.json(response);
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
         }
     },
     async get(req: Request, res: Response) {
@@ -28,34 +29,34 @@ export const serviceController = {
     
             res.json(response);
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
         }
     },
     async create(req: Request, res: Response) {
         try {
             const response = await serviceDB.create(req.body);
         
-            res.status(201).json({ message: `Registro criado ID: ${response.insertId}` });
+            res.status(201).json({ message: `Registro criado ID: ${response.lastInsertRowid}` });
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
         }
     },
     async update(req: Request, res: Response) {
         try {
             const response = await serviceDB.update(req.body);
         
-            res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
+            res.status(200).json({ message: `${response.rowsAffected} registro(s) atualizado(s)` });
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
         }
     },
     async delete(req: Request, res: Response) {
         try {
             const response = await serviceDB.delete(req.body);
     
-            res.status(200).json({ message: `${response.affectedRows} registro(s) deletado(s)` });
+            res.status(200).json({ message: `${response.rowsAffected} registro(s) deletado(s)` });
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
         }
     },
 };

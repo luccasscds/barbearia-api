@@ -4,7 +4,6 @@ CREATE TABLE Client (
     codCompany      INT NOT NULL,
     emailClient     VARCHAR(100),
     passwordClient  VARCHAR(500),
-    isADM           BOOLEAN,
     numberPhone     VARCHAR(30),
     blocked         BOOLEAN NOT NULL,
     CONSTRAINT UC_name UNIQUE (nameClient)

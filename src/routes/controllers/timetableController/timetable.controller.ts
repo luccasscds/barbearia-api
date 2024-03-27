@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { timetableDB } from "../../../db/timetableDB";
-import { IErrorSQL } from "../types";
+import { handleError } from "../../../tools/handleError";
 
 export const timetableController = {
     async getAll(req: Request, res: Response) {
@@ -11,7 +11,7 @@ export const timetableController = {
             res.json(response);
             
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
         }
     },
     async get(req: Request, res: Response) {
@@ -20,7 +20,7 @@ export const timetableController = {
     
             res.json(response);
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
         }
     },
     async getActiveOrInactive(req: Request, res: Response) {
@@ -29,7 +29,7 @@ export const timetableController = {
     
             res.json(response);
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
         }
     },
     async update(req: Request, res: Response) {
@@ -38,7 +38,16 @@ export const timetableController = {
 
             res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
+        }
+    },
+    async create(req: Request, res: Response) {
+        try {
+            await timetableDB.create(req.body.codCompany);
+
+            res.status(200).json({ message: `Registro(s) inserido(s)` });
+        } catch (error) {
+            res.json({error: handleError(error)});
         }
     },
 }

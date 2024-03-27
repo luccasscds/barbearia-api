@@ -6,7 +6,6 @@ CREATE TABLE Client (
     codCompany      INTEGER NOT NULL,
     emailClient     VARCHAR(100),
     passwordClient  VARCHAR(500),
-    isADM           BOOLEAN,
     numberPhone     VARCHAR(30),
     blocked         BOOLEAN NOT NULL,
     CONSTRAINT UC_name UNIQUE (nameClient)
@@ -47,7 +46,7 @@ CREATE TABLE Timetable (
 );
 
 CREATE TABLE ConfigSchedule (
-    codConfig   INTEGER PRIMARY KEY,
+    codConfig   INTEGER PRIMARY KEY AUTOINCREMENT,
     codCompany  INTEGER NOT NULL,
     keyConfig   VARCHAR(100) NOT NULL,
     valueConfig VARCHAR(200) NOT NULL
@@ -61,6 +60,7 @@ CREATE TABLE Status (
 CREATE TABLE Company (
     codCompany      INTEGER PRIMARY KEY AUTOINCREMENT,
     name            VARCHAR(100),
+    nameSecund      VARCHAR(100),
     photo           MEDIUMTEXT,
     numberWhatsApp  VARCHAR(11),
     nameInstagram   VARCHAR(50),
@@ -68,7 +68,9 @@ CREATE TABLE Company (
     emailCompany    VARCHAR(100) NOT NULL,
     password        VARCHAR(500) NOT NULL,
     slug            VARCHAR(50),
-    blocked         BOOLEAN NOT NULL DEFAULT FALSE
+    blocked         BOOLEAN NOT NULL DEFAULT FALSE,
+
+    CONSTRAINT UCompany_email UNIQUE (emailCompany)
 );
 
 CREATE TABLE CompanyClient (
@@ -85,61 +87,6 @@ CREATE TABLE PaymentMethod (
 
 -- INSERTS
 
-INSERT INTO Client (nameClient, emailClient) VALUES 
-('João Silva',      'joao.silva@email.com'),
-('Maria Oliveira',  'maria.oliveira@email.com'),
-('Pedro Santos',    'pedro.santos@email.com'),
-('Ana Pereira',     'ana.pereira@email.com'),
-('Carlos Rocha',    'carlos.rocha@email.com');
-/
-INSERT INTO Service (nameService, price, durationMin) VALUES 
-('Corte de Cabelo',                     30.00, 30),
-('Barba Tradicional',                   20.00, 20),
-('Pacote Completo (Cabelo + Barba)',    45.00, 60),
-('Design de Sobrancelhas',              15.00, 15),
-('Tratamento Capilar',                  40.00, 45);
--- /
--- INSERT INTO ClientService (codClient, codService) VALUES 
--- (1, 1),
--- (1, 2),
--- (1, 4),
--- (2, 4),
--- (2, 5),
--- (3, 3),
--- (3, 4),
--- (4, 5),
--- (5, 2);
-/
-INSERT INTO VirtualLine (codClient, codService, status, dateVirtual) VALUES 
-(1, 1, 'Tempo estimado', current_date),
-(1, 2, 'Tempo estimado', current_date),
-(1, 4, 'Tempo estimado', current_date),
-(2, 4, 'Tempo estimado', current_date),
-(2, 5, 'Tempo estimado', current_date),
-(3, 3, 'Tempo estimado', current_date),
-(3, 4, 'Tempo estimado', current_date),
-(4, 5, 'Tempo estimado', current_date),
-(5, 2, 'Tempo estimado', current_date);
-/
-INSERT INTO Timetable (day, codCompany, active, time01, time02, time03, time04) VALUES
-('Segunda-feira',   1, true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
-('Terça-feira',     1, true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
-('Quarta-feira',    1, true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
-('Quinta-feira',    1, true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
-('Sexta-feira',     1, true, '09:00:00', '12:00:00', '15:00:00', '19:00:00'),
-('Sábado',          1, true, '09:00:00', '17:00:00', '', ''),
-('Domingo',         1, false, '', '', '', '');
-/
-Insert into ConfigSchedule (codConfig, keyConfig, valueConfig) values 
-(1, 'timeIntervalMin', '15'),
-(2, 'maxDay', '15'),
-(3, 'cancelHoursBefore', '2'),
-(4, 'textCancellationPolicy', 'Caso o cancelamento não seja feito 2h antes, será cobrado 50% do valor do serviço como multa por não comprimento com a as normas do estabelecimento'),
-(5, 'allowCancellation', 'true'),
-(6, 'textToClient', ''),
-(7, 'pixRatePercentage', '50'),
-(8, 'keyPix', '');
-/
 INSERT INTO Status (codStatus, name) VALUES
 (1, 'Nenhum'),
 (2, 'Confirmado'),
@@ -149,9 +96,6 @@ INSERT INTO Status (codStatus, name) VALUES
 (6, 'Não comparecimento'),
 (7, 'Pagou a taxa'),
 (8, 'Pago');
-/
-INSERT INTO Company (name, photo, numberWhatsApp, nameInstagram, address) VALUES
-('💈Franskym Santos💈', 'https://d118if3nwdjtgn.cloudfront.net/487248/PAGE_BIO_IMAGE/-1075275270', '5586998350894', 'franskym_santos', '');
 /
 INSERT INTO PaymentMethod (codPay, name) VALUES
 (1, 'Nenhum'),
@@ -165,3 +109,26 @@ INSERT INTO PaymentMethod (codPay, name) VALUES
 INSERT INTO CompanyClient (codClient, codCompany)
 (select codClient, 1 codCompany from Client);
 /
+-- select count(c.codClient) from Client c
+-- where c.emailClient = 'pedro@email.com'
+-- and exists (
+--     select 1 from CompanyClient cc
+--     where cc.codClient = c.codClient
+--     and cc.codCompany = c.codCompany
+-- );
+
+-- -- TRIGGER
+-- CREATE TRIGGER T_insert_client_CompanyClient
+--   AFTER INSERT ON Client
+-- BEGIN
+--   INSERT INTO CompanyClient
+--   (codClient, codCompany) VALUES ( new.codClient, new.codCompany );
+-- END;
+
+-- CREATE TRIGGER T_delete_client_CompanyClient
+--     AFTER DELETE ON Client
+-- BEGIN
+--     DELETE FROM CompanyClient
+--     WHERE codClient = old.codClient
+--     and codCompany = old.codCompany;
+-- END;

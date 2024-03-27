@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { paymentMethodDB } from "../../../db/paymentMethodDB";
+import { handleError } from "../../../tools/handleError";
 
 export const paymentMethodController = {
     async getALl(req: Request, res: Response) {
@@ -8,7 +9,7 @@ export const paymentMethodController = {
     
             res.json(response);
         } catch (error) {
-            res.json({error});
+            res.json({error: handleError(error)});
         }
     }
 }

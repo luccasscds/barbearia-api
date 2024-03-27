@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { tools } from "../../../tools";
+import { handleError } from "../../../tools/handleError";
 // import { clientDB } from "../../../db/clientDB";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -24,6 +25,6 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
         
         next();
     } catch (error) {
-        res.json({error});
+        res.json({error: handleError(error)});
     };
 }

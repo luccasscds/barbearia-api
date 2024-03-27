@@ -56,6 +56,7 @@ routes.delete("/authorized/service", serviceController.delete);
 // timetable
 routes.get("/authorized/timetable/list/:id", timetableController.getAll);
 routes.post("/authorized/timetable", timetableController.get);
+routes.post("/authorized/timetable/create", timetableController.create);
 routes.post("/authorized/timetable/active", timetableController.getActiveOrInactive);
 routes.put("/authorized/timetable", timetableController.update);
 
@@ -66,6 +67,7 @@ routes.get("/authorized/tag/list", tagsController.getAll);
 routes.get("/authorized/config/agenda/list/:id", configAgendaController.getAll);
 routes.post("/authorized/config/agenda/get", configAgendaController.get);
 routes.put("/authorized/config/agenda", configAgendaController.update);
+routes.post("/authorized/config/agenda", configAgendaController.create);
 
 // Company
 routes.get("/authorized/company/:id", companyController.get);

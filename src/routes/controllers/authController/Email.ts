@@ -1,7 +1,6 @@
 import { createTransport } from "nodemailer";
 import { tools } from "../../../tools";
 import moment from "moment";
-import { IResponseClientByEmail } from "../../../db/clientDB";
 
 export const Email = {
     async send(options: IParamsSendEmail) {
@@ -40,7 +39,7 @@ export const Email = {
 
             await transport.sendMail({
                 from: process.env.GOOGLE_GMAIL_EMAIL,
-                to: options.client.emailClient,
+                to: options.client.email,
                 subject: `Redefinição de Senha 🔑`,
                 html: `
                 <!DOCTYPE html>
@@ -49,7 +48,7 @@ export const Email = {
                     <meta charset="utf-8">
                 </head>
                 <body>
-                    <p>Olá ${options.client.nameClient}!</p>
+                    <p>Olá ${options.client.name}!</p>
                     <p>Recebemos sua solicitação para criar uma senha. Para isso, basta clica no link abaixo.</p>
                     <div style="text-align: center; padding: 1rem 0;">
                         <a href="${link}" style="background: #dfdfdf; padding: 1rem; text-decoration: none; border-radius: 1rem;">
@@ -69,7 +68,6 @@ export const Email = {
                 `,
             });
 
-            console.log('email enviado!');
         } catch (error) {
             throw error;
         }
@@ -78,5 +76,9 @@ export const Email = {
 
 interface IParamsSendEmail {
     accessToken: string,
-    client: IResponseClientByEmail,
+    client: {
+        name: string,
+        email: string,
+        isCompany: boolean,
+    },
 };

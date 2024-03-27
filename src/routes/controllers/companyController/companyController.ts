@@ -1,20 +1,15 @@
 import { Request, Response } from "express";
 import { companyDB } from "../../../db/companyDB";
+import { handleError } from "../../../tools/handleError";
 
 export const companyController = {
     async get(req: Request, res: Response) {
-        try {
-            const { id } = req.params;
+        try {    
+            const response = await companyDB.get(req.params.id);
     
-            const response = await companyDB.get(id);
-    
-            if((response as any).errno) {
-                res.json({ error: response });
-                return;
-            };
             res.json(response);
         } catch (error) {
-            res.json({ error });
+            res.json({error: handleError(error)});
         }
     },
 
@@ -22,13 +17,9 @@ export const companyController = {
         try {
             const response = await companyDB.update(req.body);
         
-            if((response as any).errno) {
-                res.json({ error: response });
-                return;
-            };
             res.status(200).json({ message: `${response.rowsAffected} registro(s) atualizado(s)` });
         } catch (error) {
-            res.json({ error });
+            res.json({error: handleError(error)});
         }
     },
 };

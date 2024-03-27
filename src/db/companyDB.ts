@@ -2,19 +2,35 @@ import { z } from 'zod';
 import { connectionToDatabase } from './createConnection';
 import { ResultSet } from '@libsql/client/.';
 import { handleZod } from '../tools/handleZod';
+import { toolsSQL } from '../tools/toolsSQL';
 
 export const companyDB = {
-    async get(id: string | number): Promise<IResponse[]> {
+    async get(id: string | number): Promise<IResponse> {
         try {
-            const idSchema = z.number(handleZod.params('ID', 'número'));
+            const idSchema = handleZod.number('ID');
             idSchema.parse(Number(id || 'a'));
 
-            const sql = `select codCompany, name, photo, numberWhatsApp, nameInstagram, address 
+            const sql = `select codCompany, name, photo, numberWhatsApp, nameInstagram, address, slug, nameSecund
                         from Company
                         where codCompany = ?;`
-            const result = await connectionToDatabase(sql, [id]);
+            const [result] = await connectionToDatabase(sql, [id]) as any;
             
-            return result[0] ?? result;
+            return result;
+        } catch (error) {
+            throw error as any;
+        }
+    },
+
+    async getBySlug(slug: string): Promise<number | null> {
+        try {
+            const idSchema = handleZod.string('slug');
+            idSchema.parse(slug);
+
+            const sql = `select codCompany
+                        from Company where slug = ?;`;
+            const [result] = await connectionToDatabase(sql, [slug]) as any;
+            
+            return result?.codCompany;
         } catch (error) {
             throw error as any;
         }
@@ -25,11 +41,21 @@ export const companyDB = {
             const EmailSchema = handleZod.email();
             EmailSchema.parse(email);
 
-            const sql = `select codCompany, name, blocked, emailCompany, password
+            const sql = `select codCompany, 
+                                name,
+                                blocked,
+                                emailCompany,
+                                password,
+                                photo,
+                                numberWhatsApp,
+                                nameInstagram,
+                                address,
+                                slug,
+                                nameSecund
                             from Company where emailCompany = ?;`;
-            const result = await connectionToDatabase(sql, [email]);
-            
-            return result[0] ?? result;
+            const [result] = await connectionToDatabase(sql, [email]) as any;
+                        
+            return result;
         } catch (error) {
             throw error as any;
         }
@@ -40,55 +66,79 @@ export const companyDB = {
             const { name, photo, numberWhatsApp, nameInstagram, address, blocked, emailCompany, password } = newCompany;
 
             const newCompanySchema = z.object({
-                name: z.string(handleZod.params('Nome', 'texto')),
-                photo: z.string(handleZod.params('Foto', 'texto')).optional(),
-                numberWhatsApp: z.string(handleZod.params('Número de WhatsApp', 'texto')),
-                nameInstagram: z.string(handleZod.params('User do Instagram', 'texto')).optional(),
-                address: z.string(handleZod.params('Endereço', 'texto')).optional(),
-                blocked: z.boolean(handleZod.params('Bloqueio', 'boolean')).optional(),
+                name: handleZod.string('Nome'),
+                photo: handleZod.string('Foto').optional(),
+                numberWhatsApp: handleZod.string('Número de WhatsApp'),
+                nameInstagram: handleZod.string('User do Instagram').optional(),
+                address: handleZod.string('Endereço').optional(),
+                blocked: handleZod.boolean('Bloqueio').optional(),
                 emailCompany: handleZod.email(),
-                password: z.string(handleZod.params('Senha', 'texto')).min(1, 'O campo Senha deve conter pelo menos 1 caractere(s)'),
+                password: handleZod.string('Senha', {min: 1}),
             });
-            newCompanySchema.parse({ newCompany });
+            newCompanySchema.parse(newCompany);
 
             const sql = `   INSERT INTO Company 
                                 (name, photo, numberWhatsApp, nameInstagram, address, blocked, emailCompany, password) 
                             VALUES 
                                 (?, ?, ?, ?, ?, ?, ?, ?);`;
-            const result = await connectionToDatabase(sql, [name, (photo ?? ''), numberWhatsApp, (nameInstagram ?? ''), (address ?? ''), (blocked ?? false), emailCompany, password]);
+            const result = await connectionToDatabase(sql, [name, (photo ?? ''), numberWhatsApp, (nameInstagram ?? ''), (address ?? ''), (blocked ?? false), emailCompany.toLowerCase(), password]) as ResultSet;
 
-            return result as any;
+            return result;
         } catch (error) {
             throw error as any;
         };
     },
     async update(newCompany: IResponse): Promise<ResultSet> {
         try {
-            const { name, photo, numberWhatsApp, nameInstagram, address, codCompany } = newCompany;
+            const { name, photo, numberWhatsApp, nameInstagram, address, codCompany, slug, nameSecund, password } = newCompany;
 
             const newCompanySchema = z.object({
-                codCompany: z.number(handleZod.params('codCompany', 'número')),
-                name: z.string(handleZod.params('Nome', 'texto')),
-                photo: z.string(handleZod.params('Foto', 'texto')),
-                numberWhatsApp: z.string(handleZod.params('Número de WhatsApp', 'texto')),
-                nameInstagram: z.string(handleZod.params('User do Instagram', 'texto')),
-                address: z.string(handleZod.params('Endereço', 'texto')),
+                codCompany: handleZod.number('codCompany'),
+                name: handleZod.string('Nome'),
+                photo: handleZod.string('Foto'),
+                numberWhatsApp: handleZod.string('Número de WhatsApp'),
+                nameInstagram: handleZod.string('User do Instagram'),
+                address: handleZod.string('Endereço'),
+                slug: handleZod.string('Slug').optional().nullable(),
+                nameSecund: handleZod.string('NameSecund').optional().nullable(),
+                password: handleZod.string('Senha').optional(),
             });
             newCompanySchema.parse({
                 ...newCompany,
                 codCompany: Number(codCompany || 'a'),
             });
 
-            const sql = `   UPDATE Company SET 
-                            name = ?,
-                            photo = ?,
-                            numberWhatsApp = ?,
-                            nameInstagram = ?,
-                            address = ?
-                            WHERE codCompany = ?;`
-            const result = await connectionToDatabase(sql, [name, photo, numberWhatsApp, nameInstagram, address, codCompany]);
+            const isExist = await toolsSQL.isExist({ field: 'slug', value: slug!, table: 'Company'});
+            if(isExist && isExist > 1) throw 'O Caminho para o site (campo slug) já existe, por favor escolha outro';
+            let sql: string;
+            let result: ResultSet;
 
-            return result as any;
+            if(password) {
+                sql = `   UPDATE Company SET 
+                                name = ?,
+                                photo = ?,
+                                numberWhatsApp = ?,
+                                nameInstagram = ?,
+                                address = ?,
+                                slug = ?,
+                                nameSecund = ?,
+                                password = ?
+                                WHERE codCompany = ?;`
+                result = await connectionToDatabase(sql, [name, photo, numberWhatsApp, nameInstagram, address, slug, nameSecund, password, codCompany]) as ResultSet;
+            } else {
+                sql = `   UPDATE Company SET 
+                                name = ?,
+                                photo = ?,
+                                numberWhatsApp = ?,
+                                nameInstagram = ?,
+                                address = ?,
+                                slug = ?,
+                                nameSecund = ?
+                                WHERE codCompany = ?;`
+                result = await connectionToDatabase(sql, [name, photo, numberWhatsApp, nameInstagram, address, slug, nameSecund, codCompany]) as ResultSet;
+            }
+
+            return result;
         } catch (error) {
             throw error as any;
         };
@@ -102,6 +152,9 @@ interface IResponse {
     numberWhatsApp: string,
     nameInstagram: string,
     address: string,
+    slug?: string,
+    nameSecund?: string,
+    password?: string,
 }
 
 interface IResponseGetEmailCompany {
@@ -110,6 +163,12 @@ interface IResponseGetEmailCompany {
     blocked: boolean,
     password?: string,
     emailCompany: string,
+    photo: string,
+    numberWhatsApp: string,
+    nameInstagram: string,
+    address: string,
+    slug: string,
+    nameSecund: string,
 }
 
 interface IResponseCreateCompany {
