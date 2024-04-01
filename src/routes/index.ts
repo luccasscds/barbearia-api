@@ -9,6 +9,7 @@ import { tagsController } from './controllers/tagsController/tagsController';
 import { configAgendaController } from './controllers/configAgendaController/configAgendaController';
 import { companyController } from './controllers/companyController/companyController';
 import { paymentMethodController } from './controllers/paymentMethodController/paymentMethodController';
+import { financeController } from './controllers/financeController/financeController';
 
 const upload = multer({ dest: 'uploads/' });
 const routes = express.Router();
@@ -75,5 +76,8 @@ routes.put("/authorized/company", upload.single('photo'), companyController.upda
 
 // Payment Method
 routes.get("/authorized/paymentMethod/list", paymentMethodController.getALl);
+
+// Finances
+routes.post("/authorized/finance/performance", financeController.performance);
 
 export { routes };

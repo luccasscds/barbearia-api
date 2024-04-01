@@ -12,8 +12,8 @@ export const handleZod = {
     email() {
         return z.string(params('Email', 'tipo email')).email('Email inválido');
     },
-    date() {
-        return z.string(params('Data', 'tipo data')).regex(/^\d{4}-\d{2}-\d{2}$/g, 'O formato Data esperado é YYYY-MM-DD');
+    date(name = 'Data') {
+        return z.string(params(name, 'tipo data')).regex(/^\d{4}-\d{2}-\d{2}$/g, 'O formato Data esperado é YYYY-MM-DD');
     },
     time(fieldName: string) {
         return z.string(params(fieldName, 'no formato 00:00 ou 00:00:00')).regex(/^(\d{2}:\d{2}:\d{2})|(\d{2}:\d{2})$/, 'O formato Hora esperado é HH:mm ou HH:mm:ss')
