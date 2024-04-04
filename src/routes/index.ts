@@ -79,5 +79,9 @@ routes.get("/authorized/paymentMethod/list", paymentMethodController.getALl);
 
 // Finances
 routes.post("/authorized/finance/performance", financeController.performance);
+routes.post("/authorized/finance/resume", financeController.resume);
+routes.post("/authorized/finance/cashFlow", financeController.cashFlow);
+routes.post("/authorized/finance/cashFlow/details", financeController.detailsCashFlow);
+routes.post("/authorized/finance/revenue", financeController.revenue);
 
 export { routes };
