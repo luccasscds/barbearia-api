@@ -373,6 +373,80 @@ export const financeDB = {
             throw error as any;
         }
     },
+
+    async bestClients(options: IParamsPerformance): Promise<IResponseBestClients[]> {
+        try {
+            const { dateStart, dateEnd, codCompany } = options;
+            const newEventSchema = z.object({
+                dateStart: handleZod.date('Data início'),
+                dateEnd: handleZod.date('Data fim'),
+                codCompany: handleZod.number('CodCompany'),
+            });
+            newEventSchema.parse(options);
+
+            const sql = `WITH VirtualLineTemp AS (
+                            SELECT
+                                vl.codVirtual,
+                                c.codClient,
+                                c.nameClient,
+                                s.price
+                            FROM VirtualLine vl
+                            INNER JOIN Client c ON c.codClient = vl.codClient
+                            INNER JOIN Service s ON s.codService = vl.codService
+                            WHERE vl.dateVirtual BETWEEN ? AND ?
+                            AND vl.codCompany = ?
+                        )
+                        SELECT
+                            vl.codClient,
+                            vl.nameClient,
+                            COALESCE(SUM(vl.price), 0) revenue,
+                            COUNT(vl.codVirtual) countAttendances
+                        FROM VirtualLineTemp vl
+                        GROUP BY vl.codClient
+                        LIMIT 30;`;
+            const result = await connectionToDatabase(sql, [dateStart, dateEnd, codCompany] ) as any;
+    
+            return result;
+        } catch (error) {
+            throw error as any;
+        }
+    },
+
+    async detailsClients(options: IParamsPerformance): Promise<IResponseDetailsClients> {
+        try {
+            const { dateStart, dateEnd, codCompany } = options;
+            const newEventSchema = z.object({
+                dateStart: handleZod.date('Data início'),
+                dateEnd: handleZod.date('Data fim'),
+                codCompany: handleZod.number('CodCompany'),
+            });
+            newEventSchema.parse(options);
+
+            const sql = `WITH ClientTemp AS (
+                            SELECT
+                                c.codClient,
+                                c.dateCreated
+                            FROM Client c
+                            WHERE EXISTS (
+                                SELECT 1 FROM CompanyClient cc 
+                                WHERE cc.codClient = c.codClient
+                                AND cc.codCompany = ?
+                            )
+                        )
+                        SELECT
+                            COUNT(c.codClient) total,
+                            (
+                                SELECT COUNT(t.codClient) FROM ClientTemp t
+                                WHERE STRFTIME('%Y-%m-%d', t.dateCreated) BETWEEN ? AND ?
+                            ) countNewClient
+                        FROM ClientTemp c;`;
+            const [result] = await connectionToDatabase(sql, [codCompany, dateStart, dateEnd] ) as any;
+    
+            return result;
+        } catch (error) {
+            throw error as any;
+        }
+    },
 }
 
 interface IParamsPerformance {
@@ -424,4 +498,16 @@ interface IResponseCalcRevenue {
     max: number,
     min: number,
     avg: number,
+}
+
+interface IResponseBestClients {
+    codClient: number,
+    nameClient: string,
+    revenue: number,
+    countAttendances: number,
+}
+
+interface IResponseDetailsClients {
+    total: number,
+    countNewClient: number,
 }

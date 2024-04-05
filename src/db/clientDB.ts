@@ -50,7 +50,7 @@ export const clientDB = {
             const idSchema = handleZod.number('codClient');
             idSchema.parse(id);
 
-            const sql = `   select codClient, nameClient, emailClient, numberPhone, blocked
+            const sql = `   select codClient, nameClient, emailClient, numberPhone, blocked, dateCreated
                             from Client 
                             where codClient = ?;`
             const [result] = await connectionToDatabase(sql, [id] ) as any;
@@ -99,9 +99,9 @@ export const clientDB = {
             if(isExist) throw 'O Email inserido já está cadastrado. Tente outro por favor';
             
             const sql = `INSERT INTO Client 
-                            (nameClient, emailClient, passwordClient, numberPhone, blocked) 
+                            (nameClient, emailClient, passwordClient, numberPhone, blocked, dateCreated) 
                         VALUES 
-                            (?, ?, ?, ?, ?);
+                            (?, ?, ?, ?, ?, datetime('now', '-3 hours'));
             `;
             const result = await connectionToDatabase(sql, [name, email.toLowerCase(), (password ?? ''), (numberPhone ?? ''), (blocked ?? false)] ) as ResultSet;
             // @ts-ignore
@@ -232,6 +232,7 @@ interface IResponseClient {
     nameClient: string,
     emailClient: string,
     blocked: boolean,
+    dateCreated: string,
 }
 
 export interface IResponseClientByEmail {

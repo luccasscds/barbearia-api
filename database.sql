@@ -8,6 +8,7 @@ CREATE TABLE Client (
     passwordClient  VARCHAR(500),
     numberPhone     VARCHAR(30),
     blocked         BOOLEAN NOT NULL,
+    dateCreated     DATETIME NOT NULL DEFAULT '',
     CONSTRAINT UC_name UNIQUE (nameClient)
 );
 

@@ -56,4 +56,15 @@ export const financeController = {
             res.json({error: handleError(error)});
         }
     },
+
+    async bestClients(req: Request, res: Response) {
+        try {
+            const bestClients = await financeDB.bestClients(req.body);
+            const detailsClients = await financeDB.detailsClients(req.body);
+     
+            res.json({ bestClients, detailsClients });
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
+    },
 };

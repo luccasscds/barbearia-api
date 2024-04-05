@@ -83,5 +83,6 @@ routes.post("/authorized/finance/resume", financeController.resume);
 routes.post("/authorized/finance/cashFlow", financeController.cashFlow);
 routes.post("/authorized/finance/cashFlow/details", financeController.detailsCashFlow);
 routes.post("/authorized/finance/revenue", financeController.revenue);
+routes.post("/authorized/finance/best/clients", financeController.bestClients);
 
 export { routes };
