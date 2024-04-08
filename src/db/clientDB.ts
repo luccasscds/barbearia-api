@@ -11,10 +11,9 @@ export const clientDB = {
             codCompanySchema.parse(codCompany);
 
             const sql = `select c.codClient, c.nameClient, c.emailClient, c.numberPhone, c.blocked
-                        from Client c, CompanyClient cc
+                        from Client c
                         WHERE c.blocked = false
-                        AND c.codClient = cc.codClient
-                        AND cc.codCompany = ?;`
+                        AND c.codCompany = ?;`
             const result = await connectionToDatabase(sql, [codCompany] );
     
             return result as any;
@@ -33,10 +32,9 @@ export const clientDB = {
 
             const { blocked, codCompany } = newClient;
             const sql = `select c.codClient, c.nameClient, c.emailClient, c.numberPhone, c.blocked
-                        from Client c, CompanyClient cc
+                        from Client c
                         where c.blocked = ?
-                        AND c.codClient = cc.codClient
-                        AND cc.codCompany = ?;`
+                        AND c.codCompany = ?;`
             const result = await connectionToDatabase(sql, [blocked, codCompany] );
     
             return result as any;
@@ -50,9 +48,16 @@ export const clientDB = {
             const idSchema = handleZod.number('codClient');
             idSchema.parse(id);
 
-            const sql = `   select codClient, nameClient, emailClient, numberPhone, blocked, dateCreated
-                            from Client 
-                            where codClient = ?;`
+            const sql = `   select 
+                                c.codClient,c.nameClient, c.emailClient, c.numberPhone, c.blocked, c.dateCreated,
+                                (
+                                    select max(v.dateVirtual)
+                                    from VirtualLine v 
+                                    where v.codClient = c.codClient 
+                                    and v.codCompany = c.codCompany
+                                ) lastDayAttendance
+                            from Client c
+                            where c.codClient = ?;`
             const [result] = await connectionToDatabase(sql, [id] ) as any;
     
             return result;
@@ -61,15 +66,21 @@ export const clientDB = {
         }
     },
 
-    async getByEmail(email: string): Promise<IResponseClientByEmail | undefined> {
+    async getByEmail(newClient: IParamsClientByEmail): Promise<IResponseClientByEmail | undefined> {
         try {
-            const EmailSchema = handleZod.email();
-            EmailSchema.parse(email);
+            const { email, codCompany } = newClient;
+
+            const UserSchema = z.object({
+                email: handleZod.email(),
+                codCompany: handleZod.number('codCompany'),
+            });
+            UserSchema.parse(newClient);
 
             const sql = `select codClient, nameClient, emailClient, passwordClient, blocked
-                            FROM Client
-                            WHERE emailClient = ?;`
-            const [result] = await connectionToDatabase(sql, [email.toLowerCase()] ) as any;
+                        FROM Client
+                        WHERE emailClient = ?
+                        AND codCompany = ?;`
+            const [result] = await connectionToDatabase(sql, [email.toLowerCase(), codCompany] ) as any;
     
             return result;
         } catch (error) {
@@ -92,25 +103,21 @@ export const clientDB = {
             UserSchema.parse(newClient);
 
             const isExist = await toolsSQL.isExist({
+                table: 'Client',
                 field: 'emailClient',
                 value: email,
-                table: 'Client',
+                condition: `codCompany = ${codCompany}`,
             });
             if(isExist) throw 'O Email inserido já está cadastrado. Tente outro por favor';
             
             const sql = `INSERT INTO Client 
-                            (nameClient, emailClient, passwordClient, numberPhone, blocked, dateCreated) 
+                            (nameClient, emailClient, passwordClient, numberPhone, blocked, dateCreated, codCompany) 
                         VALUES 
-                            (?, ?, ?, ?, ?, datetime('now', '-3 hours'));
+                            (?, ?, ?, ?, ?, datetime('now', '-3 hours'), ?);
             `;
-            const result = await connectionToDatabase(sql, [name, email.toLowerCase(), (password ?? ''), (numberPhone ?? ''), (blocked ?? false)] ) as ResultSet;
+            const result = await connectionToDatabase(sql, [name, email.toLowerCase(), (password ?? ''), (numberPhone ?? ''), (blocked ?? false), codCompany] ) as ResultSet;
             // @ts-ignore
             result.lastInsertRowid = Number(result.lastInsertRowid);
-            await clientDB.createCompanyClient({
-                // @ts-ignore
-                codClient: result.lastInsertRowid!,
-                codCompany
-            });
 
             return result as any;
         } catch (error) {
@@ -120,38 +127,28 @@ export const clientDB = {
     
     async update(newClient: IParamsUpdateClient): Promise<ResultSet> {
         try {
-            const { id, name, email, blocked, password } = newClient;
+            const { codClient, nameClient, emailClient, blocked, password, numberPhone } = newClient;
 
             const UserSchema = z.object({
-                id: handleZod.number('codClient'),
-                name: handleZod.string('Nome', { min: 2 }),
-                email: handleZod.email(),
+                codClient: handleZod.number('codClient'),
+                nameClient: handleZod.string('Nome', { min: 2 }),
+                emailClient: handleZod.email(),
                 blocked: handleZod.boolean('Bloqueado'),
                 password: handleZod.string('Senha').optional(),
+                numberPhone: handleZod.string('Número de Telefone', {min: 11, max: 14}).or(handleZod.string('Número de Telefone', {max: 0}).optional()),
             });
             UserSchema.parse(newClient);
 
-            let sql = '';
-            let result;
-
             // depois fazer uma verificação se o update vai atualizar email já existente
 
-            if(password) {
-                sql = `   UPDATE Client SET 
-                                nameClient = ?,
-                                emailClient = ?,
-                                passwordClient = ?,
-                                blocked = ?
-                                WHERE codClient = ?;`
-                result = await connectionToDatabase(sql, [name, email, password, blocked, id] );
-            } else {
-                sql = `   UPDATE Client SET 
-                                nameClient = ?,
-                                emailClient = ?,
-                                blocked = ?
-                                WHERE codClient = ?;`
-                result = await connectionToDatabase(sql, [name, email, blocked, id] );
-            };
+            const sql = `UPDATE Client SET 
+                            nameClient = ?,
+                            emailClient = ?,
+                            ${password ? `passwordClient = '${password}',` : ''}
+                            ${numberPhone ? `numberPhone = '${numberPhone}',` : ''}
+                            blocked = ?
+                        WHERE codClient = ?;`
+            const result = await connectionToDatabase(sql, [nameClient, emailClient, blocked, codClient] );
 
             return result as any;
         } catch (error) {
@@ -161,70 +158,22 @@ export const clientDB = {
     
     async delete(newClient: IParamsDelete): Promise<ResultSet> {
         try {
-            const { codClient, codCompany } = newClient;
+            const { codClient } = newClient;
             const UserSchema = z.object({
                 codClient: handleZod.number('codClient'),
-                codCompany: handleZod.number('codCompany'),
+                // codCompany: handleZod.number('codCompany'),
             });
             UserSchema.parse(newClient);
 
-            // const sql = `DELETE FROM Client 
-            //             WHERE codClient = ?;`
-            // const result = await connectionToDatabase(sql, [codClient] );
-
-            const result = await connectionToDatabase(`
-                DELETE FROM CompanyClient 
-                WHERE codClient = ?
-                AND codCompany = ?;`,
-                [codClient, codCompany]
-            );
+            const sql = `DELETE FROM Client
+                        WHERE codClient = ?;`
+            const result = await connectionToDatabase(sql, [codClient] );
 
             return result as any;
         } catch (error) {
             throw error as any;
         };
     },
-
-    async isExistEmailOnCompanyClient(email: string, codCompany: number) {
-        try {
-            const UserSchema = z.object({
-                email: handleZod.email(),
-                codCompany: handleZod.number('codCompany'),
-            });
-            UserSchema.parse({ email, codCompany });
-    
-            const [existEmail] = await connectionToDatabase(`
-                select count(c.codClient) exist
-                from Client c, CompanyClient cc
-                WHERE c.codClient = cc.codClient
-                AND c.emailClient = ?
-                AND cc.codCompany = ?;
-            `, [ email.toLowerCase(), codCompany ]) as any;
-    
-            return !!existEmail.exist;
-        } catch (error) {
-            throw error as any;
-        }
-    },
-
-    async createCompanyClient(values: { codClient: number, codCompany: number }) {
-        try {
-            const { codClient, codCompany } = values;
-            const UserSchema = z.object({
-                codClient: handleZod.number('codClient').or(handleZod.bigint('codClient')),
-                codCompany: handleZod.number('codCompany'),
-            });
-            UserSchema.parse(values);
-
-            const sql = `INSERT INTO CompanyClient 
-                            (codClient, codCompany)
-                        VALUES 
-                            (?, ?);`;
-            await connectionToDatabase(sql, [codClient, codCompany] );
-        } catch (error) {
-            throw error as any;
-        }
-    }
 }
 
 interface IResponseClient {
@@ -233,8 +182,13 @@ interface IResponseClient {
     emailClient: string,
     blocked: boolean,
     dateCreated: string,
+    lastDayAttendance: string,
 }
 
+interface IParamsClientByEmail {
+    email: string,
+    codCompany: number,
+}
 export interface IResponseClientByEmail {
     codClient: number,
     nameClient: string,
@@ -253,10 +207,11 @@ interface IParamsNewClient {
 }
 
 interface IParamsUpdateClient {
-    id: number,
-    name: string,
-    email: string,
+    codClient: number,
+    nameClient: string,
+    emailClient: string,
     blocked: boolean,
+    numberPhone?: string,
     password?: string,
 }
 
@@ -267,5 +222,5 @@ interface IParamsGetBlockedOrNo {
 
 interface IParamsDelete {
     codClient: number,
-    codCompany: number,
+    // codCompany: number,
 }

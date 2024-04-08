@@ -427,11 +427,7 @@ export const financeDB = {
                                 c.codClient,
                                 c.dateCreated
                             FROM Client c
-                            WHERE EXISTS (
-                                SELECT 1 FROM CompanyClient cc 
-                                WHERE cc.codClient = c.codClient
-                                AND cc.codCompany = ?
-                            )
+                            WHERE c.codCompany = ?
                         )
                         SELECT
                             COUNT(c.codClient) total,

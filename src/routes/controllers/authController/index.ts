@@ -8,6 +8,8 @@ import { Google } from "./Google";
 import { companyDB } from "../../../db/companyDB";
 import { handleZod } from "../../../tools/handleZod";
 import { handleError } from "../../../tools/handleError";
+import { toolsSQL } from "../../../tools/toolsSQL";
+import lodash from 'lodash';
 
 export const authController = {
     async clientSignIn(req: Request, res: Response) {
@@ -27,16 +29,10 @@ export const authController = {
             const codCompany = await companyDB.getBySlug(slug);
             if(!codCompany) throw 'Link está com problema, por favor entre em contato com seu estabelecimento.';
 
-            const selectedClient = await clientDB.getByEmail(email);
+            const selectedClient = await clientDB.getByEmail({email, codCompany});
 
             if(!selectedClient || !selectedClient?.passwordClient) throw EmailOrPasswdMessageError;
             if(selectedClient.blocked) throw 'BLOCKED_CLIENT';
-
-            const isExist = await clientDB.isExistEmailOnCompanyClient(email, codCompany);
-            if(!isExist) await clientDB.createCompanyClient({
-                codClient: selectedClient!.codClient,
-                codCompany,
-            });
             
             const decryptPassword = tools.decrypt(selectedClient.passwordClient);
             if(password !== decryptPassword) throw EmailOrPasswdMessageError;
@@ -75,7 +71,16 @@ export const authController = {
             const codCompany = await companyDB.getBySlug(slug);
             if(!codCompany) throw 'Link está com algum problema, por favor entre em contato com seu estabelecimento.';
 
-            let selectedClient = await clientDB.getByEmail(email);
+            const isExist = await toolsSQL.isExist({
+                table: 'Client',
+                field: 'emailClient',
+                value: email,
+                condition: `codCompany = ${codCompany}`,
+            });
+            if(isExist) throw 'Esse Email já está cadastrado em nosso sistema.';
+            
+            let selectedClient = await clientDB.getByEmail({email, codCompany});
+
             if(!selectedClient) {
                 const newPassword = tools.encrypt(password);
                 await clientDB.new({
@@ -86,14 +91,9 @@ export const authController = {
                     codCompany,
                 });
                 
-                selectedClient = await clientDB.getByEmail(email);
+                selectedClient = await clientDB.getByEmail({email, codCompany});
                 if(!selectedClient) throw 'Aconteceu algo de errado, o usuário não encontrado';
             };
-            
-            const isExist = await clientDB.isExistEmailOnCompanyClient(email, codCompany);
-            if(isExist) throw 'Esse Email já está cadastrado em nosso sistema.';
-
-            await clientDB.createCompanyClient({ codClient: selectedClient!.codClient, codCompany });
             
             const newToken = await tools.token.generate();
 
@@ -190,17 +190,23 @@ export const authController = {
 
     async forgotPassword(req: Request, res: Response) {
         try {
-            const { email, isCompany } = req.body;
+            const { email, slug } = req.body;
     
             const UserSchema = z.object({
                 email: handleZod.email(),
-                isCompany: handleZod.boolean('isCompany'),
+                slug: handleZod.string('URL').optional(),
             });
             UserSchema.parse(req.body);
             
-            const client: any = isCompany 
-                ? await companyDB.getByEmail(email)
-                : await clientDB.getByEmail(email)
+            let codCompany;
+            if(slug) {
+                codCompany = await companyDB.getBySlug(slug);
+                if(!codCompany) throw 'Link está com algum problema, por favor entre em contato com seu estabelecimento.';
+            };
+
+            const client: any = codCompany 
+                ? await clientDB.getByEmail({email, codCompany})
+                : await companyDB.getByEmail(email)
             ;
             if(!client) throw 'Não existe email cadastrado';
             
@@ -209,7 +215,7 @@ export const authController = {
                 client: {
                     email,
                     name: client.name ?? client.nameClient,
-                    isCompany,
+                    codCompany,
                 },
             });
 
@@ -234,17 +240,20 @@ export const authController = {
             
             await tools.token.verify(data.token);
             
-            if(data.client.isCompany) {
+            if(!lodash.isNumber(data.client.codCompany)) {
                 const result: any = await companyDB.getByEmail(data.client.email);
                 await companyDB.update({
                     ...result,
                     password: await tools.encrypt(password),
                 });
             } else {
-                const result: any = await clientDB.getByEmail(data.client.email);
+                const result = await clientDB.getByEmail({
+                    email: data.client.email,
+                    codCompany: data.client.codCompany,
+                });
                 await clientDB.update({
-                    ...result,
-                    id: result!.codClient,
+                    ...result!,
+                    blocked: !!result?.blocked,
                     password: await tools.encrypt(password),
                 });
             }

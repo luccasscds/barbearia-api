@@ -8,8 +8,8 @@ CREATE TABLE Client (
     passwordClient  VARCHAR(500),
     numberPhone     VARCHAR(30),
     blocked         BOOLEAN NOT NULL,
-    dateCreated     DATETIME NOT NULL DEFAULT '',
-    CONSTRAINT UC_name UNIQUE (nameClient)
+    dateCreated     DATETIME NOT NULL,
+    CONSTRAINT UC_name_codCompany UNIQUE (nameClient, codCompany)
 );
 
 CREATE TABLE Service (
@@ -74,13 +74,6 @@ CREATE TABLE Company (
     CONSTRAINT UCompany_email UNIQUE (emailCompany)
 );
 
-CREATE TABLE CompanyClient (
-    codCompanyClient  INTEGER PRIMARY KEY AUTOINCREMENT,
-    codCompany        INTEGER NOT NULL,
-    codClient         INTEGER NOT NULL,
-    CONSTRAINT UC_codCompany_codClient UNIQUE (codCompany, codClient)
-);
-
 CREATE TABLE PaymentMethod (
     codPay      INTEGER PRIMARY KEY AUTOINCREMENT,
     name        VARCHAR(50) NOT NULL
@@ -106,9 +99,6 @@ INSERT INTO PaymentMethod (codPay, name) VALUES
 (5, 'Cartão de Débito'),
 (6, 'Cheque'),
 (7, 'Cortesia');
-/
-INSERT INTO CompanyClient (codClient, codCompany)
-(select codClient, 1 codCompany from Client);
 /
 -- select count(c.codClient) from Client c
 -- where c.emailClient = 'pedro@email.com'

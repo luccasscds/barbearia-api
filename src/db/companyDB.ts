@@ -110,33 +110,18 @@ export const companyDB = {
 
             const isExist = await toolsSQL.isExist({ field: 'slug', value: slug!, table: 'Company'});
             if(isExist && isExist > 1) throw 'O Caminho para o site (campo slug) já existe, por favor escolha outro';
-            let sql: string;
-            let result: ResultSet;
 
-            if(password) {
-                sql = `   UPDATE Company SET 
-                                name = ?,
-                                photo = ?,
-                                numberWhatsApp = ?,
-                                nameInstagram = ?,
-                                address = ?,
-                                slug = ?,
-                                nameSecund = ?,
-                                password = ?
-                                WHERE codCompany = ?;`
-                result = await connectionToDatabase(sql, [name, photo, numberWhatsApp, nameInstagram, address, slug, nameSecund, password, codCompany]) as ResultSet;
-            } else {
-                sql = `   UPDATE Company SET 
-                                name = ?,
-                                photo = ?,
-                                numberWhatsApp = ?,
-                                nameInstagram = ?,
-                                address = ?,
-                                slug = ?,
-                                nameSecund = ?
-                                WHERE codCompany = ?;`
-                result = await connectionToDatabase(sql, [name, photo, numberWhatsApp, nameInstagram, address, slug, nameSecund, codCompany]) as ResultSet;
-            }
+            const sql = `   UPDATE Company SET 
+                            name = ?,
+                            photo = ?,
+                            numberWhatsApp = ?,
+                            nameInstagram = ?,
+                            address = ?,
+                            slug = ?,
+                            ${password ? `password = '${password}',` : ''}
+                            nameSecund = ?
+                            WHERE codCompany = ?;`
+            const result = await connectionToDatabase(sql, [name, photo, numberWhatsApp, nameInstagram, address, slug, nameSecund, codCompany]) as ResultSet;
 
             return result;
         } catch (error) {

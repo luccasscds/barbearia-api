@@ -79,6 +79,6 @@ interface IParamsSendEmail {
     client: {
         name: string,
         email: string,
-        isCompany: boolean,
+        codCompany?: number,
     },
 };
