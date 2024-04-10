@@ -49,7 +49,7 @@ export const clientDB = {
             idSchema.parse(id);
 
             const sql = `   select 
-                                c.codClient,c.nameClient, c.emailClient, c.numberPhone, c.blocked, c.dateCreated,
+                                c.codClient,c.nameClient, c.emailClient, c.numberPhone, c.blocked, c.dateCreated, c.birthdayDate,
                                 (
                                     select max(v.dateVirtual)
                                     from VirtualLine v 
@@ -87,10 +87,82 @@ export const clientDB = {
             throw error as any;
         }
     },
+
+    async missing(options: IParamsMissing): Promise<IResponseMissing[]> {
+        try {
+            const { codCompany, countDayLast, countAttendance } = options;
+            const optionsSchema = z.object({
+                codCompany: handleZod.number('CodCompany'),
+                countDayLast: handleZod.number('Quantidade de dias de atendimento'),
+                countAttendance: handleZod.number('Quantidade atendimento'),
+            });
+            optionsSchema.parse(options);
+
+            const sql = `WITH VirtualTemp AS (
+                            SELECT
+                                v.codVirtual,
+                                v.dateVirtual,
+                                v.startTime,
+                                v.endTime,
+                                c.codClient,
+                                c.nameClient
+                            FROM
+                            VirtualLine v
+                            INNER JOIN Client c ON c.codClient = v.codClient
+                            WHERE v.codCompany = ?
+                        ),
+                        listMissing AS (
+                            SELECT
+                                v.codClient,
+                                v.nameClient,
+                                MAX(v.dateVirtual) dateVirtual,
+                                COUNT(v.codVirtual) countAttendance,
+                                (((ABS(STRFTIME('%s', 'now') - STRFTIME('%s', v.dateVirtual)) /60) /60) /24) countDayLast
+                            FROM VirtualTemp v
+                            GROUP BY v.codClient
+                        )
+                        SELECT
+                            m.codClient,
+                            m.nameClient,
+                            m.dateVirtual,
+                            m.countAttendance,
+                            m.countDayLast
+                        FROM listMissing m
+                        WHERE m.countDayLast >= ?
+                        AND m.countAttendance >= ?;`
+            const result = await connectionToDatabase(sql, [codCompany, countDayLast, countAttendance] );
+    
+            return result as any;
+        } catch (error) {
+            throw error as any;
+        }
+    },
+
+    async birthday(options: IParamsBirthday): Promise<IResponseClient[]> {
+        try {
+            const { codCompany, month } = options;
+            const optionsSchema = z.object({
+                codCompany: handleZod.number('CodCompany'),
+                month: handleZod.number('Número do mês'),
+            });
+            optionsSchema.parse(options);
+
+            const sql = `select 
+                            c.codClient,c.nameClient, c.emailClient, c.numberPhone, c.blocked, c.dateCreated, c.birthdayDate
+                        from Client c
+                        where CAST(STRFTIME('%m', c.birthdayDate) AS number) = ?
+                        and c.codCompany = ?;`
+            const result = await connectionToDatabase(sql, [month, codCompany] );
+    
+            return result as any;
+        } catch (error) {
+            throw error as any;
+        }
+    },
     
     async new(newClient: IParamsNewClient): Promise<ResultSet> {
         try {
-            const { email, name, password, numberPhone, blocked, codCompany } = newClient;
+            const { email, name, password, numberPhone, blocked, codCompany, birthdayDate } = newClient;
 
             const UserSchema = z.object({
                 name: handleZod.string('Nome', {min: 2}),
@@ -99,6 +171,7 @@ export const clientDB = {
                 numberPhone: handleZod.string('Número de Telefone', {min: 11, max: 14}).or(handleZod.string('Número de Telefone', {max: 0})),
                 blocked: handleZod.boolean('Bloqueado').optional().nullable(),
                 codCompany: handleZod.number('codCompany'),
+                birthdayDate: handleZod.date('Data de nascimento').optional(),
             });
             UserSchema.parse(newClient);
 
@@ -111,11 +184,11 @@ export const clientDB = {
             if(isExist) throw 'O Email inserido já está cadastrado. Tente outro por favor';
             
             const sql = `INSERT INTO Client 
-                            (nameClient, emailClient, passwordClient, numberPhone, blocked, dateCreated, codCompany) 
+                            (nameClient, emailClient, passwordClient, numberPhone, blocked, dateCreated, codCompany, birthdayDate) 
                         VALUES 
-                            (?, ?, ?, ?, ?, datetime('now', '-3 hours'), ?);
+                            (?, ?, ?, ?, ?, datetime('now', '-3 hours'), ?, ?);
             `;
-            const result = await connectionToDatabase(sql, [name, email.toLowerCase(), (password ?? ''), (numberPhone ?? ''), (blocked ?? false), codCompany] ) as ResultSet;
+            const result = await connectionToDatabase(sql, [name, email.toLowerCase(), (password ?? ''), (numberPhone ?? ''), (blocked ?? false), codCompany, (birthdayDate ?? '')] ) as ResultSet;
             // @ts-ignore
             result.lastInsertRowid = Number(result.lastInsertRowid);
 
@@ -127,15 +200,16 @@ export const clientDB = {
     
     async update(newClient: IParamsUpdateClient): Promise<ResultSet> {
         try {
-            const { codClient, nameClient, emailClient, blocked, password, numberPhone } = newClient;
+            const { codClient, nameClient, emailClient, blocked, password, numberPhone, birthdayDate } = newClient;
 
             const UserSchema = z.object({
                 codClient: handleZod.number('codClient'),
                 nameClient: handleZod.string('Nome', { min: 2 }),
-                emailClient: handleZod.email(),
+                emailClient: handleZod.email().or(handleZod.string('Email', {max: 0})),
                 blocked: handleZod.boolean('Bloqueado'),
                 password: handleZod.string('Senha').optional(),
                 numberPhone: handleZod.string('Número de Telefone', {min: 11, max: 14}).or(handleZod.string('Número de Telefone', {max: 0}).optional()),
+                birthdayDate: handleZod.date('Data de nascimento').optional(),
             });
             UserSchema.parse(newClient);
 
@@ -146,6 +220,7 @@ export const clientDB = {
                             emailClient = ?,
                             ${password ? `passwordClient = '${password}',` : ''}
                             ${numberPhone ? `numberPhone = '${numberPhone}',` : ''}
+                            ${birthdayDate ? `birthdayDate = '${birthdayDate}',` : ''}
                             blocked = ?
                         WHERE codClient = ?;`
             const result = await connectionToDatabase(sql, [nameClient, emailClient, blocked, codClient] );
@@ -183,6 +258,7 @@ interface IResponseClient {
     blocked: boolean,
     dateCreated: string,
     lastDayAttendance: string,
+    birthdayDate?: string,
 }
 
 interface IParamsClientByEmail {
@@ -204,6 +280,7 @@ interface IParamsNewClient {
     numberPhone?: string,
     blocked?: boolean,
     codCompany: number,
+    birthdayDate?: string,
 }
 
 interface IParamsUpdateClient {
@@ -213,6 +290,7 @@ interface IParamsUpdateClient {
     blocked: boolean,
     numberPhone?: string,
     password?: string,
+    birthdayDate?: string,
 }
 
 interface IParamsGetBlockedOrNo {
@@ -223,4 +301,21 @@ interface IParamsGetBlockedOrNo {
 interface IParamsDelete {
     codClient: number,
     // codCompany: number,
+}
+
+interface IParamsMissing {
+    codCompany: number,
+    countDayLast: number,
+    countAttendance: number,
+}
+interface IResponseMissing {
+    codClient: number,
+    nameClient: string,
+    dateVirtual: string,
+    countAttendance: number,
+    countDayLast: number,
+}
+interface IParamsBirthday {
+    codCompany: number,
+    month: number,
 }

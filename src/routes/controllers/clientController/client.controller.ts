@@ -32,6 +32,24 @@ export const clientController = {
             res.json({error: handleError(error)});
         }
     },
+    async missing(req: Request, res: Response) {
+        try {
+            const response = await clientDB.missing(req.body);
+    
+            res.json(response);
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
+    },
+    async birthday(req: Request, res: Response) {
+        try {
+            const response = await clientDB.birthday(req.body);
+    
+            res.json(response);
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
+    },
     async create(req: Request, res: Response) {
         try {
             const response = await clientDB.new(req.body);

@@ -9,6 +9,7 @@ CREATE TABLE Client (
     numberPhone     VARCHAR(30),
     blocked         BOOLEAN NOT NULL,
     dateCreated     DATETIME NOT NULL,
+    birthdayDate    DATE,
     CONSTRAINT UC_name_codCompany UNIQUE (nameClient, codCompany)
 );
 

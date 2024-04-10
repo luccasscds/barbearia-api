@@ -36,6 +36,8 @@ routes.get("/authorized/client/:id", clientController.get);
 routes.post("/authorized/client", clientController.create);
 routes.put("/authorized/client", clientController.update);
 routes.delete("/authorized/client", clientController.delete);
+routes.post("/authorized/client/missing", clientController.missing);
+routes.post("/authorized/client/birthday", clientController.birthday);
 
 // Event
 routes.post("/authorized/event/date", eventController.get);

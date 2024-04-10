@@ -55,7 +55,7 @@ export const authController = {
     },
     async clientSignUp(req: Request, res: Response) {
         try {
-            const { name, email, password, numberPhone, slug } = req.body;
+            const { name, email, password, numberPhone, slug, birthdayDate } = req.body;
     
             if(!slug) throw 'Você precisa de um link de algum estabelecimento para fazer Login';
 
@@ -89,6 +89,7 @@ export const authController = {
                     password: newPassword,
                     numberPhone,
                     codCompany,
+                    birthdayDate,
                 });
                 
                 selectedClient = await clientDB.getByEmail({email, codCompany});
@@ -96,11 +97,10 @@ export const authController = {
             };
             
             const newToken = await tools.token.generate();
-
-            selectedClient.passwordClient = undefined;
             
             const client = {
                 ...selectedClient,
+                passwordClient: undefined,
                 codCompany,
                 expirationTimeInMinute: tools.expirationTimeInMinute,
                 dateCreated: moment().add(tools.expirationTimeInMinute, 'minute').format('YYYY-MM-DD HH:mm'),
