@@ -1,6 +1,6 @@
 {
   "name": "barbearia-api",
-  "version": "0.1.1-11",
+  "version": "0.1.1-12",
   "description": "",
   "main": "src/server.ts",
   "scripts": {
