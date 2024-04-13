@@ -16,11 +16,18 @@ CREATE TABLE Client (
 CREATE TABLE Service (
     codService          INTEGER PRIMARY KEY AUTOINCREMENT,
     codCompany          INTEGER NOT NULL,
+    codCategory         INTEGER,
     nameService         VARCHAR(50) NOT NULL,
     price               REAL NOT NULL,
     durationMin         INTEGER NOT NULL,
     active              BOOLEAN NOT NULL,
     identificationColor VARCHAR(10)
+);
+
+CREATE TABLE Category (
+  codCategory   INTEGER PRIMARY KEY AUTOINCREMENT,
+  codCompany    INTEGER NOT NULL,
+  nameCategory  VARCHAR(50)
 );
 
 CREATE TABLE VirtualLine (

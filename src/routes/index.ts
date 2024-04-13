@@ -10,6 +10,7 @@ import { configAgendaController } from './controllers/configAgendaController/con
 import { companyController } from './controllers/companyController/companyController';
 import { paymentMethodController } from './controllers/paymentMethodController/paymentMethodController';
 import { financeController } from './controllers/financeController/financeController';
+import { categoryController } from './controllers/categoryController/categoryController';
 
 const upload = multer({ dest: 'uploads/' });
 const routes = express.Router();
@@ -55,6 +56,12 @@ routes.post("/authorized/service/get", serviceController.get);
 routes.post("/authorized/service", serviceController.create);
 routes.put("/authorized/service", serviceController.update);
 routes.delete("/authorized/service", serviceController.delete);
+
+// Category
+routes.get("/authorized/category/list/:id", categoryController.getAll);
+routes.post("/authorized/category", categoryController.create);
+routes.put("/authorized/category", categoryController.update);
+routes.delete("/authorized/category", categoryController.delete);
 
 // timetable
 routes.get("/authorized/timetable/list/:id", timetableController.getAll);

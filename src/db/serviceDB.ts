@@ -2,6 +2,7 @@ import { connectionToDatabase } from "./createConnection";
 import { z } from "zod";
 import { handleZod } from "../tools/handleZod";
 import { ResultSet } from "@libsql/client/.";
+import lodash from 'lodash';
 
 export const serviceDB = {
     async getAll(codCompany: number) {
@@ -10,9 +11,11 @@ export const serviceDB = {
             codCompanySchema.parse(codCompany);
 
             const sql = `SELECT 
-                            codService, nameService, price, durationMin, active, identificationColor
-                        FROM Service
-                        WHERE codCompany = ?;`;
+                            s.codService, s.nameService, s.price, s.durationMin, s.active, s.identificationColor,
+                            s.codCategory, c.nameCategory
+                        FROM Service s
+                        LEFT JOIN Category c ON c.codCategory = s.codCategory
+                        WHERE s.codCompany = ?;`;
             const result = await connectionToDatabase(sql, [codCompany] );
     
             return result;
@@ -26,9 +29,12 @@ export const serviceDB = {
             codCompanySchema.parse(codCompany);
 
             const sql = `SELECT 
-                            codService, nameService, price, durationMin
-                        FROM Service WHERE active = true
-                        AND codCompany = ?;`;
+                            s.codService, s.nameService, s.price, s.durationMin, s.active, s.identificationColor,
+                            s.codCategory, c.nameCategory
+                        FROM Service s
+                        LEFT JOIN Category c ON c.codCategory = s.codCategory
+                        WHERE s.active = true
+                        AND s.codCompany = ?;`;
             const result = await connectionToDatabase(sql, [codCompany] );
     
             return result;
@@ -45,11 +51,13 @@ export const serviceDB = {
             newServiceSchema.parse(newService);
 
             const { codCompany, codServices } = newService;
-            const sql = `select 
-                            codService, nameService, price, durationMin, active
-                        from Service
-                        where codService in( ${codServices.replace(/\s/g, '')} )
-                        AND codCompany = ${codCompany};`;
+            const sql = `SELECT 
+                            s.codService, s.nameService, s.price, s.durationMin, s.active, s.identificationColor,
+                            s.codCategory, c.nameCategory
+                        FROM Service s
+                        LEFT JOIN Category c ON c.codCategory = s.codCategory
+                        WHERE s.codService in( ${codServices.replace(/\s/g, '')} )
+                        AND s.codCompany = ${codCompany};`;
             const result = await connectionToDatabase(sql);
     
             return result;
@@ -67,15 +75,17 @@ export const serviceDB = {
                 active: handleZod.boolean('Ativo'),
                 identificationColor: handleZod.string('Código da cor').nullable(),
                 codCompany: handleZod.number('CodCompany'),
+                codCategory: handleZod.number('codCategory').optional().nullable(),
             });
             newServiceSchema.parse(newService);
 
-            const { nameService, price, durationMin, active, identificationColor, codService, codCompany } = newService;
+            const { nameService, price, durationMin, active, identificationColor, codService, codCompany, codCategory } = newService;
             const sql = `UPDATE Service SET
                             nameService = ?,
                             price = ?,
                             durationMin = ?,
                             active = ?,
+                            ${lodash.isNumber(codCategory) || lodash.isNull(codCategory) ? `codCategory = ${codCategory},`: ''}
                             identificationColor = ?
                         WHERE codService = ?
                         AND codCompany = ?`;
@@ -95,13 +105,14 @@ export const serviceDB = {
                 active: handleZod.boolean('Ativo').optional(),
                 identificationColor: handleZod.string('Código da cor').nullable(),
                 codCompany: handleZod.number('CodCompany'),
+                codCategory: handleZod.number('codCategory').optional().nullable(),
             });
             newServiceSchema.parse(newService);
 
-            const { nameService, price, durationMin, active, identificationColor, codCompany } = newService;
-            const sql = `INSERT INTO Service (nameService, price, durationMin, active, identificationColor, codCompany) VALUES 
-                        (?, ?, ?, ?, ?, ?);`;
-            const result = await connectionToDatabase(sql, [nameService, price, durationMin, (active ?? true), identificationColor, codCompany] );
+            const { nameService, price, durationMin, active, identificationColor, codCompany, codCategory } = newService;
+            const sql = `INSERT INTO Service (nameService, price, durationMin, active, identificationColor, codCompany, codCategory) VALUES 
+                        (?, ?, ?, ?, ?, ?, ?);`;
+            const result = await connectionToDatabase(sql, [nameService, price, durationMin, (active ?? true), identificationColor, codCompany, codCategory] );
 
             return result as any;
         } catch (error) {
@@ -136,6 +147,7 @@ export interface IParamsNewService {
     active?: boolean,
     identificationColor?: string,
     codCompany: number,
+    codCategory?: number,
 }
 
 export interface IParamsUpdateService {
@@ -146,6 +158,7 @@ export interface IParamsUpdateService {
     active: boolean,
     identificationColor?: string,
     codCompany: number,
+    codCategory?: number,
 }
 
 interface IParamsGetsService {
