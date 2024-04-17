@@ -112,6 +112,72 @@ export const authController = {
             res.json({error: handleError(error)});
         };
     },
+    async googleSignIn(req: Request, res: Response) {
+        try {
+            const { token, slug, } = req.body;
+    
+            if(!slug) throw 'Você precisa de um link de algum estabelecimento para fazer Login';
+
+            const UserSchema = z.object({
+                token: handleZod.string('Token'),
+                slug: handleZod.string('URL'),
+            });
+            UserSchema.parse(req.body);
+            
+            const codCompany = await companyDB.getBySlug(slug);
+            if(!codCompany) throw 'Link está com algum problema, por favor entre em contato com seu estabelecimento.';
+
+            const userInfo = await Google.getUserInfo(token);
+            console.log(userInfo)
+            
+            let selectedClient = await clientDB.getByEmail({
+                email: userInfo.email,
+                codCompany,
+            });
+
+            if(selectedClient) {
+                await clientDB.update({
+                    codClient: selectedClient.codClient,
+                    emailClient: selectedClient.emailClient,
+                    nameClient: userInfo.name,
+                    blocked: !!selectedClient.blocked,
+                    birthdayDate: userInfo.birthday,
+                    numberPhone: userInfo.phoneNumber,
+                    photo: userInfo.picture,
+                });
+            } else {
+                await clientDB.new({
+                    name: userInfo.name,
+                    email: userInfo.email,
+                    numberPhone: userInfo.phoneNumber ?? '',
+                    birthdayDate: userInfo.birthday,
+                    codCompany,
+                    photo: userInfo.picture,
+                });
+                
+                selectedClient = await clientDB.getByEmail({
+                    email: userInfo.email,
+                    codCompany,
+                });
+                if(!selectedClient) throw 'Aconteceu algo de errado, o usuário não encontrado';
+            };
+            
+            const newToken = await tools.token.generate();
+            
+            const client = {
+                ...selectedClient,
+                passwordClient: undefined,
+                codCompany,
+                expirationTimeInMinute: tools.expirationTimeInMinute,
+                dateCreated: moment().add(tools.expirationTimeInMinute, 'minute').format('YYYY-MM-DD HH:mm'),
+            }
+            const encryptClient = await tools.encrypt(JSON.stringify(client));
+
+            res.json({ token: newToken, client: encryptClient });
+        } catch(error) {
+            res.json({error: handleError(error)});
+        };
+    },
 
     async companySignIn(req: Request, res: Response) {
         try {

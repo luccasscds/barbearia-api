@@ -10,6 +10,7 @@ CREATE TABLE Client (
     blocked         BOOLEAN NOT NULL,
     dateCreated     DATETIME NOT NULL,
     birthdayDate    DATE,
+    photo           VARCHAR(100),
     CONSTRAINT UC_name_codCompany UNIQUE (nameClient, codCompany)
 );
 

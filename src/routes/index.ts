@@ -21,6 +21,7 @@ routes.get("/", async (_, res) => res.send('Bem vindo :)') );
 
 routes.post("/signIn", authController.clientSignIn);
 routes.post("/signUp", authController.clientSignUp);
+routes.post("/googleSignIn", authController.googleSignIn);
 routes.post("/company/signIn", authController.companySignIn);
 routes.post("/company/signUp", authController.companySignUp);
 

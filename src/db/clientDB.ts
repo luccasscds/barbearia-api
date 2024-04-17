@@ -49,7 +49,7 @@ export const clientDB = {
             idSchema.parse(id);
 
             const sql = `   select 
-                                c.codClient,c.nameClient, c.emailClient, c.numberPhone, c.blocked, c.dateCreated, c.birthdayDate,
+                                c.codClient,c.nameClient, c.emailClient, c.numberPhone, c.blocked, c.dateCreated, c.birthdayDate, photo,
                                 (
                                     select max(v.dateVirtual)
                                     from VirtualLine v 
@@ -76,7 +76,7 @@ export const clientDB = {
             });
             UserSchema.parse(newClient);
 
-            const sql = `select codClient, nameClient, emailClient, passwordClient, blocked
+            const sql = `select codClient, nameClient, emailClient, passwordClient, blocked, photo
                         FROM Client
                         WHERE emailClient = ?
                         AND codCompany = ?;`
@@ -162,7 +162,7 @@ export const clientDB = {
     
     async new(newClient: IParamsNewClient): Promise<ResultSet> {
         try {
-            const { email, name, password, numberPhone, blocked, codCompany, birthdayDate } = newClient;
+            const { email, name, password, numberPhone, blocked, codCompany, birthdayDate, photo } = newClient;
 
             const UserSchema = z.object({
                 name: handleZod.string('Nome', {min: 2}),
@@ -172,6 +172,7 @@ export const clientDB = {
                 blocked: handleZod.boolean('Bloqueado').optional().nullable(),
                 codCompany: handleZod.number('codCompany'),
                 birthdayDate: handleZod.date('Data de nascimento').optional(),
+                photo: handleZod.string('Foto').optional(),
             });
             UserSchema.parse(newClient);
 
@@ -184,11 +185,11 @@ export const clientDB = {
             if(isExist) throw 'O Email inserido já está cadastrado. Tente outro por favor';
             
             const sql = `INSERT INTO Client 
-                            (nameClient, emailClient, passwordClient, numberPhone, blocked, dateCreated, codCompany, birthdayDate) 
+                            (nameClient, emailClient, passwordClient, numberPhone, blocked, dateCreated, codCompany, birthdayDate, photo) 
                         VALUES 
-                            (?, ?, ?, ?, ?, datetime('now', '-3 hours'), ?, ?);
+                            (?, ?, ?, ?, ?, datetime('now', '-3 hours'), ?, ?, ?);
             `;
-            const result = await connectionToDatabase(sql, [name, email.toLowerCase(), (password ?? ''), (numberPhone ?? ''), (blocked ?? false), codCompany, (birthdayDate ?? '')] ) as ResultSet;
+            const result = await connectionToDatabase(sql, [name, email.toLowerCase(), (password ?? ''), (numberPhone ?? ''), (blocked ?? false), codCompany, (birthdayDate ?? ''), (photo ?? '')] ) as ResultSet;
             // @ts-ignore
             result.lastInsertRowid = Number(result.lastInsertRowid);
 
@@ -200,7 +201,7 @@ export const clientDB = {
     
     async update(newClient: IParamsUpdateClient): Promise<ResultSet> {
         try {
-            const { codClient, nameClient, emailClient, blocked, password, numberPhone, birthdayDate } = newClient;
+            const { codClient, nameClient, emailClient, blocked, password, numberPhone, birthdayDate, photo } = newClient;
 
             const UserSchema = z.object({
                 codClient: handleZod.number('codClient'),
@@ -210,6 +211,7 @@ export const clientDB = {
                 password: handleZod.string('Senha').optional(),
                 numberPhone: handleZod.string('Número de Telefone', {min: 11, max: 14}).or(handleZod.string('Número de Telefone', {max: 0}).optional()),
                 birthdayDate: handleZod.date('Data de nascimento').optional(),
+                photo: handleZod.string('Foto').optional(),
             });
             UserSchema.parse(newClient);
 
@@ -221,6 +223,7 @@ export const clientDB = {
                             ${password ? `passwordClient = '${password}',` : ''}
                             ${numberPhone ? `numberPhone = '${numberPhone}',` : ''}
                             ${birthdayDate ? `birthdayDate = '${birthdayDate}',` : ''}
+                            ${photo ? `photo = '${photo}',` : ''}
                             blocked = ?
                         WHERE codClient = ?;`
             const result = await connectionToDatabase(sql, [nameClient, emailClient, blocked, codClient] );
@@ -259,6 +262,7 @@ interface IResponseClient {
     dateCreated: string,
     lastDayAttendance: string,
     birthdayDate?: string,
+    photo?: string,
 }
 
 interface IParamsClientByEmail {
@@ -271,6 +275,7 @@ export interface IResponseClientByEmail {
     emailClient: string,
     passwordClient?: string,
     blocked: boolean,
+    photo?: string,
 }
 
 interface IParamsNewClient {
@@ -281,6 +286,7 @@ interface IParamsNewClient {
     blocked?: boolean,
     codCompany: number,
     birthdayDate?: string,
+    photo?: string,
 }
 
 interface IParamsUpdateClient {
@@ -291,6 +297,7 @@ interface IParamsUpdateClient {
     numberPhone?: string,
     password?: string,
     birthdayDate?: string,
+    photo?: string,
 }
 
 interface IParamsGetBlockedOrNo {
