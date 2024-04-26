@@ -21,6 +21,7 @@ export const financeDB = {
                             INNER JOIN Service s ON s.codService = vl.codService
                             WHERE vl.dateVirtual BETWEEN ? AND ?
                             AND vl.codCompany = ?
+                            AND vl.typeVirtual = 'normal'
                         ), ExpenseTemp AS (
                             select 0 expense -- modificar depois qnd criar a tabela Expense
                         )
@@ -57,6 +58,7 @@ export const financeDB = {
                             FROM VirtualLine vl
                             WHERE vl.dateVirtual BETWEEN ? AND ?
                             AND vl.codCompany = ?
+                            AND vl.typeVirtual = 'normal'
                         )
                         SELECT
                             count(DISTINCT dateVirtual) countDay,
@@ -106,6 +108,7 @@ export const financeDB = {
                             WHERE vl.dateVirtual BETWEEN ? AND ?
                             AND vl.codCompany = s.codCompany
                             AND vl.codCompany = ?
+                            AND vl.typeVirtual = 'normal'
                         )
                         SELECT
                             v.nameService,
@@ -149,6 +152,7 @@ export const financeDB = {
                             WHERE vl.dateVirtual BETWEEN ? AND ?
                             AND vl.codCompany = s.codCompany
                             AND vl.codCompany = ?
+                            AND vl.typeVirtual = 'normal'
                         )
                         select
                             p.name,
@@ -199,6 +203,7 @@ export const financeDB = {
                 WHERE vl.dateVirtual BETWEEN ? AND ?
                 AND vl.codCompany = s.codCompany
                 AND vl.codCompany = ?
+                AND vl.typeVirtual = 'normal'
             ),
             expenseTemp as (
                 select 0 codExpense -- colocar depois a tabela Expense
@@ -240,7 +245,8 @@ export const financeDB = {
                         INNER JOIN PaymentMethod p ON p.codPay = vl.codPayment
                         WHERE vl.dateVirtual = ?
                         AND vl.codCompany = s.codCompany
-                        AND vl.codCompany = ?;`;
+                        AND vl.codCompany = ?
+                        AND vl.typeVirtual = 'normal';`;
             const result = await connectionToDatabase(sql, [dateStart, codCompany] ) as any;
     
             return result;
@@ -279,6 +285,7 @@ export const financeDB = {
                 WHERE vl.dateVirtual BETWEEN ? AND ?
                 AND vl.codCompany = s.codCompany
                 AND vl.codCompany = ?
+                AND vl.typeVirtual = 'normal'
             )
             select
                 (
@@ -354,6 +361,7 @@ export const financeDB = {
                             WHERE vl.dateVirtual BETWEEN ? AND ?
                             AND vl.codCompany = s.codCompany
                             AND vl.codCompany = ?
+                            AND vl.typeVirtual = 'normal'
                         ),
                         calcBase as (
                             select

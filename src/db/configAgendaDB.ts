@@ -75,7 +75,8 @@ export const configAgendaDB = {
                             (${codCompany}, 'allowCancellation', 'true'),
                             (${codCompany}, 'textToClient', ''),
                             (${codCompany}, 'pixRatePercentage', '50'),
-                            (${codCompany}, 'keyPix', '');`;
+                            (${codCompany}, 'keyPix', ''),
+                            (${codCompany}, 'allowSchedulingHolidays', 'false');`;
             const result = await connectionToDatabase(sql, undefined, true) as any;
         
             return result;

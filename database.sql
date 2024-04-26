@@ -41,6 +41,8 @@ CREATE TABLE VirtualLine (
     dateVirtual         DATETIME NOT NULL,
     startTime           TIME NOT NULL,
     endTime             TIME NOT NULL,
+    typeVirtual         VARCHAR(50) NOT NULL DEFAULT 'normal',
+    description         VARCHAR(50),
     CONSTRAINT UC_client_service_date_startTime UNIQUE (codClient, codService, dateVirtual, startTime)
 );
 
@@ -109,14 +111,6 @@ INSERT INTO PaymentMethod (codPay, name) VALUES
 (6, 'Cheque'),
 (7, 'Cortesia');
 /
--- select count(c.codClient) from Client c
--- where c.emailClient = 'pedro@email.com'
--- and exists (
---     select 1 from CompanyClient cc
---     where cc.codClient = c.codClient
---     and cc.codCompany = c.codCompany
--- );
-
 -- -- TRIGGER
 -- CREATE TRIGGER T_insert_client_CompanyClient
 --   AFTER INSERT ON Client

@@ -14,7 +14,7 @@ export const eventDB = {
 
             const { codCompany, date } = newEvent;
             const sql = `select 
-                            distinct vl.dateVirtual, vl.startTime, vl.endTime, vl.codStatus,
+                            distinct vl.dateVirtual, vl.startTime, vl.endTime, vl.codStatus, vl.typeVirtual, vl.description,
                             (select name from Status where codStatus = vl.codStatus) status,
                             (
                                 select GROUP_CONCAT(v.codVirtual) from VirtualLine v
@@ -158,15 +158,17 @@ export const eventDB = {
                 endTime: handleZod.time('Tempo final'),
                 codPayment: handleZod.number('CodPayment'),
                 codCompany: handleZod.number('CodCompany'),
+                typeVirtual: handleZod.string('Tipo da agendamento').optional(),
+                description: handleZod.string('Descrição').optional(),
             });
             EventSchema.parse(newEvent);
 
-            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codCompany } = newEvent;
+            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codCompany, typeVirtual, description } = newEvent;
             const sql = `INSERT INTO VirtualLine 
-                            (codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codCompany)
+                            (codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codCompany, typeVirtual, description)
                         VALUES 
-                            (?, ?, ?, ?, ?, ?, ?, ?);`;
-            const result = await connectionToDatabase(sql, [codClient, codService, (codStatus ?? 1), dateVirtual, startTime, endTime, codPayment, codCompany] );
+                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+            const result = await connectionToDatabase(sql, [codClient, codService, (codStatus ?? 1), dateVirtual, startTime, endTime, codPayment, codCompany, (typeVirtual ?? 'normal'), (description ?? '')] );
 
             return result as any;
         } catch (error) {
@@ -184,10 +186,11 @@ export const eventDB = {
                 endTime: handleZod.time('Tempo final'),
                 codPayment: handleZod.number('CodPayment'),
                 codCompany: handleZod.number('CodCompany'),
+                description: handleZod.string('Descrição').optional(),
             });
             EventSchema.parse(newEvent);
 
-            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual, codCompany } = newEvent;
+            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, description, codPayment, codVirtual, codCompany } = newEvent;
             const sql = `UPDATE VirtualLine SET
                             codClient = ?,
                             codService = ?,
@@ -195,6 +198,7 @@ export const eventDB = {
                             dateVirtual = ?,
                             startTime = ?,
                             endTime = ?,
+                            ${description ? `description = '${description}',` : ''}
                             codPayment = ?
                         WHERE codVirtual = ?
                         AND codCompany = ?;`;
@@ -274,6 +278,8 @@ interface IParamsCreateEvent {
     startTime: string,
     endTime: string,
     codCompany: number,
+    typeVirtual?: 'normal' | 'lock',
+    description?: string,
 };
 
 interface IParamsUpdateEvent {
@@ -286,6 +292,7 @@ interface IParamsUpdateEvent {
     codVirtual: string,
     codPayment: number,
     codCompany: number,
+    description?: string,
 };
 
 interface IParamsDeleteEvent {

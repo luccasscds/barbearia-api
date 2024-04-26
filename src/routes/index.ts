@@ -11,6 +11,7 @@ import { companyController } from './controllers/companyController/companyContro
 import { paymentMethodController } from './controllers/paymentMethodController/paymentMethodController';
 import { financeController } from './controllers/financeController/financeController';
 import { categoryController } from './controllers/categoryController/categoryController';
+import { holidaysController } from './controllers/holidaysController/holidaysController';
 
 const upload = multer({ dest: 'uploads/' });
 const routes = express.Router();
@@ -94,5 +95,8 @@ routes.post("/authorized/finance/cashFlow", financeController.cashFlow);
 routes.post("/authorized/finance/cashFlow/details", financeController.detailsCashFlow);
 routes.post("/authorized/finance/revenue", financeController.revenue);
 routes.post("/authorized/finance/best/clients", financeController.bestClients);
+
+// holidays
+routes.get("/authorized/holidays", holidaysController.get);
 
 export { routes };
