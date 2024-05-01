@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { connectionToDatabase } from './createConnection';
 import { handleZod } from '../tools/handleZod';
 import { ResultSet } from '@libsql/client/.';
+import { toolsSQL } from '../tools/toolsSQL';
 
 export const configAgendaDB = {
     async getAll(codCompany: number): Promise<IResponse[]> {
@@ -66,6 +67,9 @@ export const configAgendaDB = {
         try {
             const codCompanySchema = handleZod.number('CodCompany');
             codCompanySchema.parse(codCompany);
+
+            const isExist = await toolsSQL.isExist({ table: 'ConfigSchedule', field: 'codCompany', value: `${codCompany}` });
+            if(isExist && isExist > 0) return;
 
             const sql = `   Insert into ConfigSchedule (codCompany, keyConfig, valueConfig) values 
                             (${codCompany}, 'timeIntervalMin', '15'),

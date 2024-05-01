@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { connectionToDatabase } from "./createConnection";
 import { handleZod } from "../tools/handleZod";
+import { toolsSQL } from "../tools/toolsSQL";
 
 export const timetableDB = {
     async getAll(codCompany: number) {
@@ -99,6 +100,9 @@ export const timetableDB = {
         try {
             const codCompanySchema = handleZod.number('CodCompany');
             codCompanySchema.parse(codCompany);
+
+            const isExist = await toolsSQL.isExist({ table: 'Timetable', field: 'codCompany', value: `${codCompany}` });
+            if(isExist && isExist > 0) return;
 
             const sql = `   INSERT INTO Timetable (day, codCompany, active, time01, time02, time03, time04) VALUES
                             ('Segunda-feira',   ${codCompany}, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
