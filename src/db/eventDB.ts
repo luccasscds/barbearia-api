@@ -1,12 +1,20 @@
-import { IResponseDB } from "../routes/controllers/types";
-import { createConnection } from "./createConnection";
+import { z } from "zod";
+import { connectionToDatabase } from "./createConnection";
+import { handleZod } from "../tools/handleZod";
+import { ResultSet } from "@libsql/client/.";
 
 export const eventDB = {
-    async getEvent(date: string): Promise<any> {
+    async getEvent(newEvent: IParamsGetEvent): Promise<any> {
         try {
-            const db = await createConnection();
+            const newEventSchema = z.object({
+                codCompany: handleZod.number('CodCompany'),
+                date: handleZod.date(),
+            });
+            newEventSchema.parse(newEvent);
+
+            const { codCompany, date } = newEvent;
             const sql = `select 
-                            distinct vl.dateVirtual, vl.startTime, vl.endTime, vl.codStatus,
+                            distinct vl.dateVirtual, vl.startTime, vl.endTime, vl.codStatus, vl.typeVirtual, vl.description,
                             (select name from Status where codStatus = vl.codStatus) status,
                             (
                                 select GROUP_CONCAT(v.codVirtual) from VirtualLine v
@@ -45,23 +53,39 @@ export const eventDB = {
                                     and v.startTime = vl.startTime
                                 )
                             ) total,
+                            (
+                                select identificationColor from Service where codService = (
+                                    select MAX(v.codService)
+                                    from VirtualLine v
+                                    where v.codClient = vl.codClient
+                                    and v.dateVirtual = vl.dateVirtual
+                                    and v.startTime = vl.startTime
+                                )
+                            ) identificationColor,
                             vl.codPayment,
-                            (select name from PaymentMethod where codPay = vl.codPayment) desPayment
+                            (select name from PaymentMethod where codPay = vl.codPayment) desPayment,
+                            codCompany
                         from VirtualLine vl
-                        where vl.dateVirtual = ?;`;
-            const [result] = await db.query(sql, [date]);
+                        where vl.dateVirtual = ?
+                        and codCompany = ?;`;
+            const result = await connectionToDatabase(sql, [date, codCompany] );
     
-            db.end();
             return result;
         } catch (error) {
-            return error;
+            throw error as any;
         }
     },
-    async getEventByClient(codClient: number): Promise<any> {
+    async getEventByClient(newEvent: IParamsGetEventByClient): Promise<any> {
         try {
+            const { codClient, codCompany } = newEvent;
+            const newEventSchema = z.object({
+                codClient: handleZod.number('CodClient'),
+                codCompany: handleZod.number('CodCompany'),
+            });
+            newEventSchema.parse(newEvent);
+
             const defaultDay = 15;
 
-            const db = await createConnection();
             const sql = `select 
                         distinct vl.dateVirtual, vl.startTime, vl.endTime,
                         (
@@ -93,48 +117,80 @@ export const eventDB = {
                         ) total
                     from VirtualLine vl
                     where vl.codClient = ?
-                    and vl.dateVirtual >= DATE_SUB(current_date, INTERVAL ? DAY)
+                    and vl.dateVirtual >= date('now', '-${defaultDay} day')
+                    and codCompany = ?
                     order by vl.dateVirtual desc, vl.startTime desc;`;
-            const [result] = await db.query(sql, [codClient, defaultDay]);
+            const result = await connectionToDatabase(sql, [codClient, codCompany] );
     
-            db.end();
             return result;
         } catch (error) {
-            return error;
+            throw error as any;
         }
     },
-    async getEventByMonth(id: number): Promise<any> {
+    async getEventByMonth(newEvent: IParamsGetEventByMonth): Promise<any> {
         try {
-            const db = await createConnection();
-            const sql = `select distinct dateVirtual from VirtualLine where month(dateVirtual) = ?;`;
-            const [result] = await db.query(sql, [id]);
+            const { codMonth, codCompany } = newEvent;
+            const newEventSchema = z.object({
+                codMonth: handleZod.number('codMonth'),
+                codCompany: handleZod.number('CodCompany'),
+            });
+            newEventSchema.parse(newEvent);
+
+            const sql = `SELECT DISTINCT dateVirtual 
+                        FROM VirtualLine 
+                        WHERE cast(strftime('%m', dateVirtual) as number) = ?
+                        AND codCompany = ?;`;
+            const result = await connectionToDatabase(sql, [codMonth, codCompany] ) as any;
     
-            db.end();
-            return result as any;
+            return result;
         } catch (error) {
-            return error as any;
+            throw error as any;
         }
     },
-    async createEvent(newEvent: IParamsCreateEvent): Promise<IResponseDB> {
+    async createEvent(newEvent: IParamsCreateEvent): Promise<ResultSet> {
         try {
-            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment } = newEvent;
-            const db = await createConnection();
+            const EventSchema = z.object({
+                codClient: handleZod.number('CodClient'),
+                codService: handleZod.number('CodService'),
+                codStatus: handleZod.number('CodStatus'),
+                dateVirtual: handleZod.date(),
+                startTime: handleZod.time('Tempo inicial'),
+                endTime: handleZod.time('Tempo final'),
+                codPayment: handleZod.number('CodPayment'),
+                codCompany: handleZod.number('CodCompany'),
+                typeVirtual: handleZod.string('Tipo da agendamento').optional(),
+                description: handleZod.string('Descrição').optional(),
+            });
+            EventSchema.parse(newEvent);
+
+            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codCompany, typeVirtual, description } = newEvent;
             const sql = `INSERT INTO VirtualLine 
-                            (codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment)
+                            (codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codCompany, typeVirtual, description)
                         VALUES 
-                            (?, ?, ?, ?, ?, ?, ?);`;
-            const [result] = await db.query(sql, [codClient, codService, (codStatus ?? 1), dateVirtual, startTime, endTime, codPayment]);
-    
-            db.end();
+                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+            const result = await connectionToDatabase(sql, [codClient, codService, (codStatus ?? 1), dateVirtual, startTime, endTime, codPayment, codCompany, (typeVirtual ?? 'normal'), (description ?? '')] );
+
             return result as any;
         } catch (error) {
-            return error as any;
+            throw error as any;
         }
     },
-    async updateEvent(newEvent: IParamsUpdateEvent): Promise<IResponseDB> {
+    async updateEvent(newEvent: IParamsUpdateEvent): Promise<ResultSet> {
         try {
-            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual } = newEvent;
-            const db = await createConnection();
+            const EventSchema = z.object({
+                codClient: handleZod.number('CodClient'),
+                codService: handleZod.number('CodService'),
+                codStatus: handleZod.number('CodStatus'),
+                dateVirtual: handleZod.date(),
+                startTime: handleZod.time('Tempo inicial'),
+                endTime: handleZod.time('Tempo final'),
+                codPayment: handleZod.number('CodPayment'),
+                codCompany: handleZod.number('CodCompany'),
+                description: handleZod.string('Descrição').optional(),
+            });
+            EventSchema.parse(newEvent);
+
+            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, description, codPayment, codVirtual, codCompany } = newEvent;
             const sql = `UPDATE VirtualLine SET
                             codClient = ?,
                             codService = ?,
@@ -142,46 +198,75 @@ export const eventDB = {
                             dateVirtual = ?,
                             startTime = ?,
                             endTime = ?,
+                            ${description ? `description = '${description}',` : ''}
                             codPayment = ?
-                        WHERE codVirtual = ?;`;
-            const [result] = await db.query(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual]);
-    
-            db.end();
+                        WHERE codVirtual = ?
+                        AND codCompany = ?;`;
+            const result = await connectionToDatabase(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual, codCompany] );
+
             return result as any;
         } catch (error) {
-            return error as any;
+            throw error as any;
         }
     },
-    async deleteEvent(newEvent: IParamsDeleteEvent): Promise<IResponseDB> {
+    async deleteEvent(newEvent: IParamsDeleteEvent): Promise<ResultSet> {
         try {
-            const { codClient, dateVirtual, startTime } = newEvent;
+            const EventSchema = z.object({            
+                codClient: handleZod.number('CodClient'),
+                dateVirtual: handleZod.date(),
+                startTime: handleZod.time('Tempo inicial'),
+                codCompany: handleZod.number('CodCompany'),
+            });
+            EventSchema.parse(newEvent);
 
-            const db = await createConnection();
+            const { codClient, dateVirtual, startTime, codCompany } = newEvent;
+
             const sql = `DELETE FROM VirtualLine 
                         WHERE codClient = ?
-                        and dateVirtual = ?
-                        and startTime = ?;`;
-            const [result] = await db.query(sql, [codClient, dateVirtual, startTime]);
+                        AND dateVirtual = ?
+                        AND startTime = ?
+                        AND codCompany = ?;`;
+            const result = await connectionToDatabase(sql, [codClient, dateVirtual, startTime, codCompany] );
     
-            db.end();
             return result as any;
         } catch (error) {
-            return error as any;
+            throw error as any;
         }
     },
-    async deleteIn(codVirtual: string): Promise<IResponseDB> {
+    async deleteIn(newEvent: IParamsDeleteInEvent): Promise<ResultSet> {
         try {
-            const db = await createConnection();
+            const EventSchema = z.object({            
+                codVirtual: z.number(handleZod.params('CodVirtual', 'array de número')).array(),
+                codCompany: handleZod.number('CodCompany'),
+            });
+            EventSchema.parse(newEvent);
+
+            const { codCompany, codVirtual } = newEvent;
             const sql = `DELETE FROM VirtualLine 
-                        WHERE codVirtual in(${codVirtual});`;
-            const [result] = await db.query(sql);
+                        WHERE codVirtual in(${codVirtual.join(',')})
+                        AND codCompany = ${codCompany};`;
+            const result = await connectionToDatabase(sql);
     
-            db.end();
             return result as any;
         } catch (error) {
-            return error as any;
+            throw error as any;
         }
     },
+};
+
+interface IParamsGetEvent {
+    date: string,
+    codCompany: number,
+};
+
+interface IParamsGetEventByClient {
+    codClient: number,
+    codCompany: number,
+};
+
+interface IParamsGetEventByMonth {
+    codMonth: number,
+    codCompany: number,
 };
 
 interface IParamsCreateEvent {
@@ -192,6 +277,9 @@ interface IParamsCreateEvent {
     dateVirtual: string,
     startTime: string,
     endTime: string,
+    codCompany: number,
+    typeVirtual?: 'normal' | 'lock',
+    description?: string,
 };
 
 interface IParamsUpdateEvent {
@@ -203,10 +291,18 @@ interface IParamsUpdateEvent {
     endTime: string,
     codVirtual: string,
     codPayment: number,
+    codCompany: number,
+    description?: string,
 };
 
 interface IParamsDeleteEvent {
     codClient: number,
     dateVirtual: string,
     startTime: string,
+    codCompany: number,
+};
+
+interface IParamsDeleteInEvent {
+    codVirtual: number[],
+    codCompany: number,
 };

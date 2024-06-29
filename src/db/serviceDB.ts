@@ -1,92 +1,172 @@
-import { createConnection } from "./createConnection";
-import { IResponseDB } from "../routes/controllers/types";
+import { connectionToDatabase } from "./createConnection";
+import { z } from "zod";
+import { handleZod } from "../tools/handleZod";
+import { ResultSet } from "@libsql/client/.";
+import lodash from 'lodash';
 
 export const serviceDB = {
-    async getAll() {
+    async getAll(codCompany: number) {
         try {
-            const db = await createConnection();
-            const sql = `select 
-                            codService, nameService, price, durationMin, active
-                        from Service;`;
-            const [result] = await db.query(sql);
+            const codCompanySchema = handleZod.number('CodCompany');
+            codCompanySchema.parse(codCompany);
+
+            const sql = `SELECT 
+                            s.codService, s.nameService, s.price, s.durationMin, s.active, s.identificationColor,
+                            s.codCategory, c.nameCategory
+                        FROM Service s
+                        LEFT JOIN Category c ON c.codCategory = s.codCategory
+                        WHERE s.codCompany = ?;`;
+            const result = await connectionToDatabase(sql, [codCompany] );
     
-            db.end();
             return result;
         } catch (error) {
-            return error;
+            throw error as any;
         }
     },
-    async getAllActive() {
+    async getAllActive(codCompany: number) {
         try {
-            const db = await createConnection();
-            const sql = `select 
-                            codService, nameService, price, durationMin
-                        from Service where active = true;`;
-            const [result] = await db.query(sql);
+            const codCompanySchema = handleZod.number('CodCompany');
+            codCompanySchema.parse(codCompany);
+
+            const sql = `SELECT 
+                            s.codService, s.nameService, s.price, s.durationMin, s.active, s.identificationColor,
+                            s.codCategory, c.nameCategory
+                        FROM Service s
+                        LEFT JOIN Category c ON c.codCategory = s.codCategory
+                        WHERE s.active = true
+                        AND s.codCompany = ?;`;
+            const result = await connectionToDatabase(sql, [codCompany] );
     
-            db.end();
             return result;
         } catch (error) {
-            return error;
+            throw error as any;
         }
     },
-    async get(codServices: string) {
+    async get(newService: IParamsGetsService) {
         try {
-            const db = await createConnection();
-            const sql = `select 
-                            codService, nameService, price, durationMin, active
-                        from Service
-                        where codService in( ${codServices.replace(/\s/g, '')} );`;
-            const [result] = await db.query(sql);
+            const newServiceSchema = z.object({
+                codCompany: handleZod.number('CodCompany'),
+                codServices: handleZod.string('CodServices'),
+            });
+            newServiceSchema.parse(newService);
+
+            const { codCompany, codServices } = newService;
+            const sql = `SELECT 
+                            s.codService, s.nameService, s.price, s.durationMin, s.active, s.identificationColor,
+                            s.codCategory, c.nameCategory
+                        FROM Service s
+                        LEFT JOIN Category c ON c.codCategory = s.codCategory
+                        WHERE s.codService in( ${codServices.replace(/\s/g, '')} )
+                        AND s.codCompany = ${codCompany};`;
+            const result = await connectionToDatabase(sql);
     
-            db.end();
             return result;
         } catch (error) {
-            return error;
+            throw error as any;
         }
     },
-    async update(codService: number, nameService: string, price: number, durationMin: number, active: boolean): Promise<IResponseDB> {
+    async update(newService: IParamsUpdateService): Promise<ResultSet> {
         try {
-            const db = await createConnection();
+            const newServiceSchema = z.object({
+                codService: handleZod.number('CodService'),
+                nameService: handleZod.string('Nome de serviço', {min: 2}),
+                price: handleZod.number('Preço'),
+                durationMin: handleZod.number('Duração em min'),
+                active: handleZod.boolean('Ativo'),
+                identificationColor: handleZod.string('Código da cor').nullable(),
+                codCompany: handleZod.number('CodCompany'),
+                codCategory: handleZod.number('codCategory').optional().nullable(),
+            });
+            newServiceSchema.parse(newService);
+
+            const { nameService, price, durationMin, active, identificationColor, codService, codCompany, codCategory } = newService;
             const sql = `UPDATE Service SET
                             nameService = ?,
                             price = ?,
                             durationMin = ?,
-                            active = ?
-                        WHERE codService = ?`;
-            const [result] = await db.query(sql, [nameService, price, durationMin, active, codService]);
-    
-            db.commit();
-            db.end();
+                            active = ?,
+                            ${lodash.isNumber(codCategory) || lodash.isNull(codCategory) ? `codCategory = ${codCategory},`: ''}
+                            identificationColor = ?
+                        WHERE codService = ?
+                        AND codCompany = ?`;
+            const result = await connectionToDatabase(sql, [nameService, price, durationMin, active, identificationColor, codService, codCompany] );
+
             return result as any;
         } catch (error) {
-           return error as any;
+            throw error as any;
         };
     },
-    async create(nameService: string, price: number, durationMin: number): Promise<IResponseDB> {
+    async create(newService: IParamsNewService): Promise<ResultSet> {
         try {
-            const db = await createConnection();
-            const sql = `INSERT INTO Service (nameService, price, durationMin, active) VALUES 
-                        (?, ?, ?, true);`;
-            const [result] = await db.query(sql, [nameService, price, durationMin]);
-    
-            db.end();
+            const newServiceSchema = z.object({
+                nameService: handleZod.string('Nome de serviço', {min: 2}),
+                price: handleZod.number('Preço'),
+                durationMin: handleZod.number('Duração em min'),
+                active: handleZod.boolean('Ativo').optional(),
+                identificationColor: handleZod.string('Código da cor').nullable(),
+                codCompany: handleZod.number('CodCompany'),
+                codCategory: handleZod.number('codCategory').optional().nullable(),
+            });
+            newServiceSchema.parse(newService);
+
+            const { nameService, price, durationMin, active, identificationColor, codCompany, codCategory } = newService;
+            const sql = `INSERT INTO Service (nameService, price, durationMin, active, identificationColor, codCompany, codCategory) VALUES 
+                        (?, ?, ?, ?, ?, ?, ?);`;
+            const result = await connectionToDatabase(sql, [nameService, price, durationMin, (active ?? true), identificationColor, codCompany, codCategory] );
+
             return result as any;
         } catch (error) {
-           return error as any;
+            throw error as any;
         };
     },
-    async delete(codService: number): Promise<IResponseDB> {
+    async delete(newService: IParamsDeleteService): Promise<ResultSet> {
         try {
-            const db = await createConnection();
+            const newServiceSchema = z.object({
+                codService: handleZod.number('CodService'),
+                codCompany: handleZod.number('CodCompany'),
+            });
+            newServiceSchema.parse(newService);
+
+            const { codService, codCompany } = newService;
             const sql = `DELETE FROM Service 
-                        WHERE codService = ?;`;
-            const [result] = await db.query(sql, [codService]);
-    
-            db.end();
+                        WHERE codService = ?
+                        AND codCompany = ?;`;
+            const result = await connectionToDatabase(sql, [codService, codCompany] );
+            
             return result as any;
         } catch (error) {
-           return error as any;
+            throw error as any;
         };
     },
 };
+
+export interface IParamsNewService {
+    nameService: string,
+    price: number,
+    durationMin: number,
+    active?: boolean,
+    identificationColor?: string,
+    codCompany: number,
+    codCategory?: number,
+}
+
+export interface IParamsUpdateService {
+    codService: number,
+    nameService: string,
+    price: number,
+    durationMin: number,
+    active: boolean,
+    identificationColor?: string,
+    codCompany: number,
+    codCategory?: number,
+}
+
+interface IParamsGetsService {
+    codServices: string,
+    codCompany: number,
+};
+
+interface IParamsDeleteService {
+    codService: number,
+    codCompany: number,
+}

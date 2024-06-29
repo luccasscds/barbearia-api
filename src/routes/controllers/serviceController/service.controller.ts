@@ -1,64 +1,62 @@
 import { Request, Response } from "express";
 import { serviceDB } from "../../../db/serviceDB";
-import { IErrorSQL } from "../types";
+import { handleError } from "../../../tools/handleError";
 
 export const serviceController = {
     async getAll(req: Request, res: Response) {
-        const response = await serviceDB.getAll();
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {
+            const { id } = req.params;
+            const response = await serviceDB.getAll(Number(id));
+    
+            res.json(response);
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
     },
     async getAllActive(req: Request, res: Response) {
-        const response = await serviceDB.getAllActive();
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {
+            const { id } = req.params;
+            const response = await serviceDB.getAllActive(Number(id));
+    
+            res.json(response);
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
     },
     async get(req: Request, res: Response) {
-        const { id } = req.params;
-        const response = await serviceDB.get(id);
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {
+            const response = await serviceDB.get(req.body);
+    
+            res.json(response);
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
     },
     async create(req: Request, res: Response) {
-        const {nameService, price, durationMin } = req.body;
-        const response = await serviceDB.create(nameService, price, durationMin);
-    
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.status(201).json({ message: `Registro criado ID: ${response.insertId}` });
+        try {
+            const response = await serviceDB.create(req.body);
+        
+            res.status(201).json({ message: `Registro criado ID: ${response.lastInsertRowid}` });
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
     },
     async update(req: Request, res: Response) {
-        const { codService, nameService, price, durationMin, active } = req.body;
-        const response = await serviceDB.update(codService, nameService, price, durationMin, active);
-    
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
+        try {
+            const response = await serviceDB.update(req.body);
+        
+            res.status(200).json({ message: `${response.rowsAffected} registro(s) atualizado(s)` });
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
     },
     async delete(req: Request, res: Response) {
-        const { id } = req.params;
-        const response = await serviceDB.delete(Number(id));
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.status(200).json({ message: `${response.affectedRows} registro(s) deletado(s)` });
+        try {
+            const response = await serviceDB.delete(req.body);
+    
+            res.status(200).json({ message: `${response.rowsAffected} registro(s) deletado(s)` });
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
     },
 };

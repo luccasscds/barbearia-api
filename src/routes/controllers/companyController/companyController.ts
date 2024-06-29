@@ -1,32 +1,25 @@
 import { Request, Response } from "express";
-import { IErrorSQL } from "../types";
 import { companyDB } from "../../../db/companyDB";
+import { handleError } from "../../../tools/handleError";
 
 export const companyController = {
     async get(req: Request, res: Response) {
-        const { id } = req.params;
-
-        const response = await companyDB.get(id);
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {    
+            const response = await companyDB.get(req.params.id);
+    
+            res.json(response);
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
     },
 
     async update(req: Request, res: Response) {
         try {
-            const { name, photo, numberWhatsApp, nameInstagram, address, codCompany } = req.body;
-            const response = await companyDB.update({name, photo, numberWhatsApp, nameInstagram, address, codCompany});
+            const response = await companyDB.update(req.body);
         
-            if((response as IErrorSQL).errno) {
-                res.json({ error: response });
-                return;
-            };
-            res.status(200).json({ message: `${response.affectedRows} registro(s) atualizado(s)` });
+            res.status(200).json({ message: `${response.rowsAffected} registro(s) atualizado(s)` });
         } catch (error) {
-            res.json({ error });
+            res.json({error: handleError(error)});
         }
     },
 };

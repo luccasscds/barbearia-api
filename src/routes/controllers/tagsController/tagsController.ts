@@ -1,15 +1,15 @@
 import { Request, Response } from "express";
 import { tagsDB } from "../../../db/tagsDB";
-import { IErrorSQL } from "../types";
+import { handleError } from "../../../tools/handleError";
 
 export const tagsController = {
     async getAll(req: Request, res: Response) {
-        const response = await tagsDB.getAll();
-
-        if((response as IErrorSQL).errno) {
-            res.json({ error: response });
-            return;
-        };
-        res.json(response);
+        try {
+            const response = await tagsDB.getAll();
+            
+            res.json(response);
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
     },
 };

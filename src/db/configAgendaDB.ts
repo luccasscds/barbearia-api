@@ -1,50 +1,107 @@
-import { IErrorSQL, IResponseDB } from '../routes/controllers/types';
-import { createConnection } from './createConnection';
+import { z } from 'zod';
+import { connectionToDatabase } from './createConnection';
+import { handleZod } from '../tools/handleZod';
+import { ResultSet } from '@libsql/client/.';
+import { toolsSQL } from '../tools/toolsSQL';
 
 export const configAgendaDB = {
-    async getAll(): Promise<IResponse[] | IErrorSQL> {
+    async getAll(codCompany: number): Promise<IResponse[]> {
         try {
-            const db = await createConnection();
-            const sql = `select keyConfig, valueConfig from ConfigSchedule;`
-            const [result] = await db.query(sql);
+            const codCompanySchema = handleZod.number('CodCompany');
+            codCompanySchema.parse(codCompany);
+
+            const sql = `SELECT keyConfig, valueConfig 
+                        FROM ConfigSchedule
+                        WHERE codCompany = ?;`
+            const result = await connectionToDatabase(sql, [codCompany] ) as any;
     
-            db.end();
-            return result as any;
+            return result;
         } catch (error) {
             throw error as any;
         }
     },
-    async get(keys: string): Promise<IResponse[] | IErrorSQL> {
+    async get(newConfigAgenda: IParamsGetConfigAgenda): Promise<IResponse[]> {
         try {
-            const db = await createConnection();
+            const { codCompany, keys } = newConfigAgenda;
+            const newEventSchema = z.object({
+                codCompany: handleZod.number('CodCompany'),
+                keys: z.string(handleZod.params('Keys', 'array de texto')).array(),
+            });
+            newEventSchema.parse(newConfigAgenda);
+
+            const newValue = keys.map((key) => `"${key}"`).join(',');
+
             const sql = `select keyConfig, valueConfig from ConfigSchedule
-                        where keyConfig in(${keys});`
-            const [result] = await db.query(sql);
+                        WHERE keyConfig in(${newValue})
+                        AND codCompany = ${codCompany};`
+            const result = await connectionToDatabase(sql) as any;
     
-            db.end();
-            return result as any;
+            return result;
         } catch (error) {
             throw error as any;
         }
     },
-    async update(keyConfig: string, valueConfig: string): Promise<IResponseDB> {
+    async update(newConfig: IParamsUpdate): Promise<ResultSet> {
         try {
-            const db = await createConnection();
+            const { keyConfig, valueConfig, codCompany } = newConfig;
+            const newConfigSchema = z.object({
+                keyConfig: handleZod.string('KeyConfig'),
+                valueConfig: handleZod.string('ValueConfig'),
+                codCompany: handleZod.number('CodCompany'),
+            });
+            newConfigSchema.parse(newConfig);
+
             const sql = `   UPDATE ConfigSchedule SET 
                             valueConfig = ?
-                            WHERE keyConfig = ?;`
-            const [result] = await db.query(sql, [valueConfig, keyConfig]);
+                            WHERE keyConfig = ?
+                            AND codCompany = ?;`
+            const result = await connectionToDatabase(sql, [valueConfig, keyConfig, codCompany] ) as ResultSet;
         
-            db.commit();
-            db.end();
-            return result as any;
+            return result;
         } catch (error) {
             throw error as any;
         };
     },
+
+    async create(codCompany: number) {
+        try {
+            const codCompanySchema = handleZod.number('CodCompany');
+            codCompanySchema.parse(codCompany);
+
+            const isExist = await toolsSQL.isExist({ table: 'ConfigSchedule', field: 'codCompany', value: `${codCompany}` });
+            if(isExist && isExist > 0) return;
+
+            const sql = `   Insert into ConfigSchedule (codCompany, keyConfig, valueConfig) values 
+                            (${codCompany}, 'timeIntervalMin', '15'),
+                            (${codCompany}, 'maxDay', '15'),
+                            (${codCompany}, 'cancelHoursBefore', '2'),
+                            (${codCompany}, 'textCancellationPolicy', 'Caso o cancelamento não seja feito 2h antes, será cobrado 50% do valor do serviço como multa por não comprimento com a as normas do estabelecimento'),
+                            (${codCompany}, 'allowCancellation', 'true'),
+                            (${codCompany}, 'textToClient', ''),
+                            (${codCompany}, 'pixRatePercentage', '50'),
+                            (${codCompany}, 'keyPix', ''),
+                            (${codCompany}, 'allowSchedulingHolidays', 'false');`;
+            const result = await connectionToDatabase(sql, undefined, true) as any;
+        
+            return result;
+        } catch (error) {
+            throw error as any;
+        };
+    }
 }
 
 interface IResponse {
     keyConfig: string,
     valueConfig: string,
+}
+
+interface IParamsUpdate {
+    keyConfig: string,
+    valueConfig: string,
+    codCompany: number,
+}
+
+interface IParamsGetConfigAgenda {
+    keys: string[],
+    codCompany: number,
 }
