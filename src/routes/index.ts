@@ -12,6 +12,7 @@ import { paymentMethodController } from './controllers/paymentMethodController/p
 import { financeController } from './controllers/financeController/financeController';
 import { categoryController } from './controllers/categoryController/categoryController';
 import { holidaysController } from './controllers/holidaysController/holidaysController';
+import { employeeController } from './controllers/employeeController/employeeController';
 
 const upload = multer({ dest: 'uploads/' });
 const routes = express.Router();
@@ -48,7 +49,6 @@ routes.post("/authorized/event/client", eventController.getEventByClient);
 routes.post("/authorized/event/date/month", eventController.getEventByMonth);
 routes.post("/authorized/event", eventController.create);
 routes.put("/authorized/event", eventController.update);
-routes.delete("/authorized/event", eventController.delete);
 routes.delete("/authorized/event/in", eventController.deleteIn);
 
 // Service
@@ -69,8 +69,12 @@ routes.delete("/authorized/category", categoryController.delete);
 routes.get("/authorized/timetable/list/:id", timetableController.getAll);
 routes.post("/authorized/timetable", timetableController.get);
 routes.post("/authorized/timetable/create", timetableController.create);
-routes.post("/authorized/timetable/active", timetableController.getActiveOrInactive);
 routes.put("/authorized/timetable", timetableController.update);
+routes.post("/authorized/timetable/employee", timetableController.getTimetableEmployee);
+routes.post("/authorized/timetable/employee/active", timetableController.getActiveOrInactive);
+routes.post("/authorized/timetable/employee/day", timetableController.getByDayTimetableEmployee);
+routes.post("/authorized/timetable/employee/create", timetableController.createTimetableEmployee);
+routes.put("/authorized/timetable/employee", timetableController.updateTimetableEmployee);
 
 // Tags
 routes.get("/authorized/tag/list", tagsController.getAll);
@@ -98,5 +102,16 @@ routes.post("/authorized/finance/best/clients", financeController.bestClients);
 
 // holidays
 routes.get("/authorized/holidays", holidaysController.get);
+
+// Employee
+routes.post("/authorized/employee/get", employeeController.get);
+routes.post("/authorized/employee/get/company", employeeController.getByCompany);
+routes.post("/authorized/employee/get/permissions/default", employeeController.getPermissionsByDefault);
+routes.post("/authorized/employee/get/permissions", employeeController.getPermissions);
+routes.post("/authorized/employee", employeeController.create);
+routes.put("/authorized/employee", employeeController.update);
+routes.delete("/authorized/employee", employeeController.delete);
+routes.post("/authorized/employee/get/service", employeeController.getService);
+routes.post("/authorized/employee/service", employeeController.createService);
 
 export { routes };
