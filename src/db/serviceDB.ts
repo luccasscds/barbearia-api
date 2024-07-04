@@ -29,8 +29,15 @@ export const serviceDB = {
             codCompanySchema.parse(codCompany);
 
             const sql = `SELECT 
-                            s.codService, s.nameService, s.price, s.durationMin, s.active, s.identificationColor,
-                            s.codCategory, c.nameCategory
+                            s.codService,
+                            s.nameService,
+                            s.price,
+                            s.durationMin,
+                            s.active,
+                            s.identificationColor,
+                            s.codCategory,
+                            c.nameCategory,
+                            (select GROUP_CONCAT(es.codEmployee) from Employee_Service es where es.codService = s.codService) codEmployees
                         FROM Service s
                         LEFT JOIN Category c ON c.codCategory = s.codCategory
                         WHERE s.active = true

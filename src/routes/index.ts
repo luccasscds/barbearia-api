@@ -111,6 +111,7 @@ routes.post("/authorized/employee/get/permissions", employeeController.getPermis
 routes.post("/authorized/employee", employeeController.create);
 routes.put("/authorized/employee", employeeController.update);
 routes.delete("/authorized/employee", employeeController.delete);
+routes.post("/authorized/employee/get/service/by/employee", employeeController.getServiceByEmployee);
 routes.post("/authorized/employee/get/service", employeeController.getService);
 routes.post("/authorized/employee/service", employeeController.createService);
 
