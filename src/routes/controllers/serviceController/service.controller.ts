@@ -34,27 +34,27 @@ export const serviceController = {
     },
     async create(req: Request, res: Response) {
         try {
-            const response = await serviceDB.create(req.body);
+            await serviceDB.create(req.body);
         
-            res.status(201).json({ message: `Registro criado ID: ${response.lastInsertRowid}` });
+            res.status(201).json({ message: `Registro criado com sucesso` });
         } catch (error) {
             res.json({error: handleError(error)});
         }
     },
     async update(req: Request, res: Response) {
         try {
-            const response = await serviceDB.update(req.body);
+            await serviceDB.update(req.body);
         
-            res.status(200).json({ message: `${response.rowsAffected} registro(s) atualizado(s)` });
+            res.status(200).json({ message: `O(s) serviço(s) foi(ram) atualizado(s)` });
         } catch (error) {
             res.json({error: handleError(error)});
         }
     },
     async delete(req: Request, res: Response) {
         try {
-            const response = await serviceDB.delete(req.body);
+            await serviceDB.delete(req.body);
     
-            res.status(200).json({ message: `${response.rowsAffected} registro(s) deletado(s)` });
+            res.status(200).json({ message: `O(s) serviço(s) foi(ram) removido(s)` });
         } catch (error) {
             res.json({error: handleError(error)});
         }

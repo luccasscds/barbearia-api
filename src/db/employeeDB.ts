@@ -304,7 +304,8 @@ export const employeeDB = {
                             codService,
                             accessGranted
                         FROM Employee_Service
-                        WHERE codEmployee = ?;`;
+                        WHERE codEmployee = ?
+                        AND accessGranted = true;`;
             const result = await connectionToDatabase(sql, [codEmployee] ) as any;
     
             return result;
@@ -328,6 +329,7 @@ export const employeeDB = {
                                     SELECT 1 FROM Employee_Service es
                                     WHERE es.codService = s.codService
                                     AND es.codEmployee = ?
+                                    AND es.accessGranted = true
                                 )
                                     THEN true
                                     ELSE false

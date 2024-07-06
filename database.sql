@@ -134,7 +134,8 @@ CREATE TABLE Employee_Service (
     codService    INTEGER NOT NULL,
     accessGranted BOOLEAN NOT NULL,
     FOREIGN KEY (codEmployee) REFERENCES Employee(codEmployee) ON DELETE CASCADE,
-    FOREIGN KEY (codService) REFERENCES Service(codService)
+    FOREIGN KEY (codService) REFERENCES Service(codService),
+    CONSTRAINT UC_Employee_Service UNIQUE (codEmployee, codService)
 );
 
 CREATE TABLE TimetableEmployee (
