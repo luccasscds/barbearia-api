@@ -55,7 +55,7 @@ export const employeeDB = {
                             e.dateCreated,
                             e.isMaster,
                             e.canSchedule,
-                            CASE WHEN COALESCE(es.codEmployee, e.isMaster)
+                            CASE WHEN COALESCE((select 1 from Employee_Service es where es.codEmployee = e.codEmployee), e.isMaster)
                                 THEN true
                                 ELSE false
                             END AS hasServices,
@@ -64,7 +64,6 @@ export const employeeDB = {
                                 ELSE false
                             END AS hasTimetable
                         from Employee e
-                        LEFT JOIN Employee_Service es ON es.codEmployee = e.codEmployee
                         where e.codCompany = ?;`;
             const result = await connectionToDatabase(sql, [codCompany] ) as any;
     
@@ -293,6 +292,27 @@ export const employeeDB = {
             throw error as any;
         }
     },
+    async getServiceByEmployee(newData: IParamsGetServiceByEmployee): Promise<IResponseGetServiceByEmployee[]> {
+        try {
+            const { codEmployee } = newData;
+            const newSchema = z.object({
+                codEmployee: handleZod.number('codEmployee'),
+            });
+            newSchema.parse(newData);
+
+            const sql = `SELECT
+                            codService,
+                            accessGranted
+                        FROM Employee_Service
+                        WHERE codEmployee = ?
+                        AND accessGranted = true;`;
+            const result = await connectionToDatabase(sql, [codEmployee] ) as any;
+    
+            return result;
+        } catch (error) {
+            throw error as any;
+        }
+    },
     async getService(newData: IParamsGetService): Promise<IResponseGetService[]> {
         try {
             const { codCompany, codEmployee } = newData;
@@ -302,24 +322,21 @@ export const employeeDB = {
             });
             newSchema.parse(newData);
 
-            const sql = `SELECT
-                            s.codService,
-                            s.nameService,
-                            es.accessGranted
-                        FROM Employee_Service es
-                        INNER JOIN Service s ON es.codService = s.codService
-                        WHERE
-                            es.codEmployee = ?
-                        UNION
-                        SELECT
-                            s.codService,
-                            s.nameService,
-                            false AS accessGranted
-                        FROM Service s
-                        WHERE
-                            NOT EXISTS (SELECT 1 FROM Employee_Service es WHERE es.codService = s.codService)
-                            AND s.codCompany = ?
-                            AND s.active = true`;
+            const sql = `   SELECT
+                                s.codService,
+                                s.nameService,
+                                CASE WHEN (
+                                    SELECT 1 FROM Employee_Service es
+                                    WHERE es.codService = s.codService
+                                    AND es.codEmployee = ?
+                                    AND es.accessGranted = true
+                                )
+                                    THEN true
+                                    ELSE false
+                                END AS accessGranted
+                            FROM Service s
+                            WHERE s.active = true
+                            AND s.codCompany = ?;`;
             const result = await connectionToDatabase(sql, [codEmployee, codCompany] ) as any;
     
             return result;
@@ -332,7 +349,7 @@ export const employeeDB = {
             const { codEmployee, codService } = newData;
             const newSchema = z.object({
                 codEmployee: handleZod.number('codEmployee'),
-                codService: handleZod.number('codService'),
+                codService: handleZod.number('codService').array(),
             });
             newSchema.parse(newData);
 
@@ -342,10 +359,14 @@ export const employeeDB = {
                     args: [codEmployee],
                 });
 
-                await transaction.execute({
-                    sql: `INSERT INTO Employee_Service (codEmployee, codService, accessGranted) VALUES (?, ?, true);`,
-                    args: [codEmployee, codService],
-                });
+                for(const item of codService) {
+                    await transaction.execute({
+                        sql: `  INSERT INTO Employee_Service
+                                (codEmployee, codService, accessGranted) VALUES
+                                (?, ?, true);`,
+                        args: [codEmployee, item],
+                    });
+                };
             });
         } catch (error) {
             throw error as any;
@@ -395,9 +416,13 @@ interface IParamsGetService {
     codEmployee: number,
 };
 
+interface IParamsGetServiceByEmployee {
+    codEmployee: number,
+};
+
 interface IParamsCreateService {
     codEmployee: number,
-    codService: number,
+    codService: number[],
 };
 
 interface IResponseGetPermissionsByDefault {
@@ -449,5 +474,10 @@ interface IResponseGetByCompany {
 interface IResponseGetService {
     codService: number,
     nameService: string,
+    accessGranted: boolean,
+};
+
+interface IResponseGetServiceByEmployee {
+    codService: number,
     accessGranted: boolean,
 };

@@ -78,6 +78,15 @@ export const employeeController = {
             res.json({error: handleError(error)});
         }
     },
+    async getServiceByEmployee(req: Request, res: Response) {
+        try {
+            const response = await employeeDB.getServiceByEmployee(req.body);
+    
+            res.json(response);
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
+    },
     async getService(req: Request, res: Response) {
         try {
             const response = await employeeDB.getService(req.body);
@@ -91,7 +100,7 @@ export const employeeController = {
         try {
             await employeeDB.createService(req.body);
     
-            res.status(201).json({ message: `Registro criado com sucesso` });
+            res.status(201).json({ message: `Serviço(s) adicionado(s) com sucesso` });
         } catch (error) {
             res.json({error: handleError(error)});
         }
