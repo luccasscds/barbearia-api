@@ -16,6 +16,13 @@ export function handleError(error: any) {
         } else {
             error = error.cause.message;
         }
+    } else if(error.code) { // JWT 
+        error = { ...error }
+    } else if(error.message) { // Error
+        error = {
+            message: error.message,
+            stack: error.stack,
+        }
     };
     
     return error;

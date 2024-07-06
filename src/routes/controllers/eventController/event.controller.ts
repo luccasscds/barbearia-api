@@ -44,7 +44,7 @@ export const eventController = {
         }
     },
     async update(req: Request, res: Response) {
-        try {   
+        try {
             const response = await eventDB.updateEvent(req.body);
     
             res.status(200).json({ message: `Registro atualizado ID: ${response.rowsAffected}` });
@@ -52,20 +52,11 @@ export const eventController = {
             res.json({error: handleError(error)});
         }
     },
-    async delete(req: Request, res: Response) {
-        try {    
-            const response = await eventDB.deleteEvent(req.body);
-            
-            res.status(200).json({ message: `${response.rowsAffected} registro(s) deletado(s)` });
-        } catch (error) {
-            res.json({error: handleError(error)});
-        }
-    },
     async deleteIn(req: Request, res: Response) {
         try {
-            const response = await eventDB.deleteIn(req.body);
+            await eventDB.deleteIn(req.body);
             
-            res.status(200).json({ message: `${response.rowsAffected} registro(s) deletado(s)` });
+            res.status(200).json({ message: `Agendamento(s) excluído(s) com sucesso!` });
         } catch (error) {
             res.json({error: handleError(error)});
         }

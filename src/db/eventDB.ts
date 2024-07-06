@@ -7,12 +7,12 @@ export const eventDB = {
     async getEvent(newEvent: IParamsGetEvent): Promise<any> {
         try {
             const newEventSchema = z.object({
-                codCompany: handleZod.number('CodCompany'),
+                codEmployee: handleZod.number('CodEmployee'),
                 date: handleZod.date(),
             });
             newEventSchema.parse(newEvent);
 
-            const { codCompany, date } = newEvent;
+            const { codEmployee, date } = newEvent;
             const sql = `select 
                             distinct vl.dateVirtual, vl.startTime, vl.endTime, vl.codStatus, vl.typeVirtual, vl.description,
                             (select name from Status where codStatus = vl.codStatus) status,
@@ -64,11 +64,11 @@ export const eventDB = {
                             ) identificationColor,
                             vl.codPayment,
                             (select name from PaymentMethod where codPay = vl.codPayment) desPayment,
-                            codCompany
+                            codEmployee
                         from VirtualLine vl
                         where vl.dateVirtual = ?
-                        and codCompany = ?;`;
-            const result = await connectionToDatabase(sql, [date, codCompany] );
+                        and codEmployee = ?;`;
+            const result = await connectionToDatabase(sql, [date, codEmployee] );
     
             return result;
         } catch (error) {
@@ -84,42 +84,31 @@ export const eventDB = {
             });
             newEventSchema.parse(newEvent);
 
-            const defaultDay = 15;
-
-            const sql = `select 
-                        distinct vl.dateVirtual, vl.startTime, vl.endTime,
-                        (
-                            select GROUP_CONCAT(codService) from Service where codService in (
-                                select v.codService
-                                from VirtualLine v
-                                where v.codClient = vl.codClient
-                                and v.dateVirtual = vl.dateVirtual
-                                and v.startTime = vl.startTime
-                            )
-                        ) codServices,
-                        (
-                            select GROUP_CONCAT(nameService) from Service where codService in (
-                                select v.codService
-                                from VirtualLine v
-                                where v.codClient = vl.codClient
-                                and v.dateVirtual = vl.dateVirtual
-                                and v.startTime = vl.startTime
-                            )
-                        ) nameServices,
-                        (
-                            select sum(price) from Service where codService in (
-                                select v.codService
-                                from VirtualLine v
-                                where v.codClient = vl.codClient
-                                and v.dateVirtual = vl.dateVirtual
-                                and v.startTime = vl.startTime
-                            )
-                        ) total
-                    from VirtualLine vl
-                    where vl.codClient = ?
-                    and vl.dateVirtual >= date('now', '-${defaultDay} day')
-                    and codCompany = ?
-                    order by vl.dateVirtual desc, vl.startTime desc;`;
+            const sql = `SELECT DISTINCT
+                            vl.dateVirtual,
+                            vl.startTime,
+                            vl.endTime,
+                            GROUP_CONCAT(DISTINCT vl.codVirtual) AS codVirtual,
+                            GROUP_CONCAT(DISTINCT s.codService) AS codServices,
+                            GROUP_CONCAT(DISTINCT s.nameService) AS nameServices,
+                            SUM(s.price) AS total,
+                            vl.codEmployee,
+                            e.nameEmployee
+                        FROM
+                            VirtualLine vl
+                        LEFT JOIN Service s ON s.codService = vl.codService
+                        INNER JOIN Employee e ON e.codEmployee = vl.codEmployee
+                        WHERE
+                            vl.codClient = ?
+                            AND vl.dateVirtual >= date('now', '-15 day')
+                            AND vl.codCompany = ?
+                        GROUP BY
+                            vl.dateVirtual,
+                            vl.startTime,
+                            vl.endTime
+                        ORDER BY
+                            vl.dateVirtual DESC,
+                            vl.startTime DESC;`;
             const result = await connectionToDatabase(sql, [codClient, codCompany] );
     
             return result;
@@ -129,18 +118,18 @@ export const eventDB = {
     },
     async getEventByMonth(newEvent: IParamsGetEventByMonth): Promise<any> {
         try {
-            const { codMonth, codCompany } = newEvent;
+            const { date, codEmployee } = newEvent;
             const newEventSchema = z.object({
-                codMonth: handleZod.number('codMonth'),
-                codCompany: handleZod.number('CodCompany'),
+                date: handleZod.date('Data'),
+                codEmployee: handleZod.number('CodEmployee'),
             });
             newEventSchema.parse(newEvent);
 
             const sql = `SELECT DISTINCT dateVirtual 
                         FROM VirtualLine 
-                        WHERE cast(strftime('%m', dateVirtual) as number) = ?
-                        AND codCompany = ?;`;
-            const result = await connectionToDatabase(sql, [codMonth, codCompany] ) as any;
+                        WHERE strftime('%m%Y', dateVirtual) = strftime('%m%Y', ?)
+                        AND codEmployee = ?;`;
+            const result = await connectionToDatabase(sql, [date, codEmployee] ) as any;
     
             return result;
         } catch (error) {
@@ -157,18 +146,19 @@ export const eventDB = {
                 startTime: handleZod.time('Tempo inicial'),
                 endTime: handleZod.time('Tempo final'),
                 codPayment: handleZod.number('CodPayment'),
-                codCompany: handleZod.number('CodCompany'),
+                codEmployee: handleZod.number('codEmployee'),
+                codCompany: handleZod.number('codCompany'),
                 typeVirtual: handleZod.string('Tipo da agendamento').optional(),
                 description: handleZod.string('Descrição').optional(),
             });
             EventSchema.parse(newEvent);
 
-            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codCompany, typeVirtual, description } = newEvent;
+            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codCompany, codEmployee, typeVirtual, description } = newEvent;
             const sql = `INSERT INTO VirtualLine 
-                            (codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codCompany, typeVirtual, description)
+                            (codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codCompany, codEmployee, typeVirtual, description)
                         VALUES 
-                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
-            const result = await connectionToDatabase(sql, [codClient, codService, (codStatus ?? 1), dateVirtual, startTime, endTime, codPayment, codCompany, (typeVirtual ?? 'normal'), (description ?? '')] );
+                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+            const result = await connectionToDatabase(sql, [codClient, codService, (codStatus ?? 1), dateVirtual, startTime, endTime, codPayment, codCompany, codEmployee, (typeVirtual ?? 'normal'), (description ?? '')] );
 
             return result as any;
         } catch (error) {
@@ -185,12 +175,12 @@ export const eventDB = {
                 startTime: handleZod.time('Tempo inicial'),
                 endTime: handleZod.time('Tempo final'),
                 codPayment: handleZod.number('CodPayment'),
-                codCompany: handleZod.number('CodCompany'),
+                codEmployee: handleZod.number('CodEmployee'),
                 description: handleZod.string('Descrição').optional(),
             });
             EventSchema.parse(newEvent);
 
-            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, description, codPayment, codVirtual, codCompany } = newEvent;
+            const { codClient, codService, codStatus, dateVirtual, startTime, endTime, description, codPayment, codVirtual, codEmployee } = newEvent;
             const sql = `UPDATE VirtualLine SET
                             codClient = ?,
                             codService = ?,
@@ -201,33 +191,9 @@ export const eventDB = {
                             ${description ? `description = '${description}',` : ''}
                             codPayment = ?
                         WHERE codVirtual = ?
-                        AND codCompany = ?;`;
-            const result = await connectionToDatabase(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual, codCompany] );
+                        AND codEmployee = ?;`;
+            const result = await connectionToDatabase(sql, [codClient, codService, codStatus, dateVirtual, startTime, endTime, codPayment, codVirtual, codEmployee] );
 
-            return result as any;
-        } catch (error) {
-            throw error as any;
-        }
-    },
-    async deleteEvent(newEvent: IParamsDeleteEvent): Promise<ResultSet> {
-        try {
-            const EventSchema = z.object({            
-                codClient: handleZod.number('CodClient'),
-                dateVirtual: handleZod.date(),
-                startTime: handleZod.time('Tempo inicial'),
-                codCompany: handleZod.number('CodCompany'),
-            });
-            EventSchema.parse(newEvent);
-
-            const { codClient, dateVirtual, startTime, codCompany } = newEvent;
-
-            const sql = `DELETE FROM VirtualLine 
-                        WHERE codClient = ?
-                        AND dateVirtual = ?
-                        AND startTime = ?
-                        AND codCompany = ?;`;
-            const result = await connectionToDatabase(sql, [codClient, dateVirtual, startTime, codCompany] );
-    
             return result as any;
         } catch (error) {
             throw error as any;
@@ -237,14 +203,11 @@ export const eventDB = {
         try {
             const EventSchema = z.object({            
                 codVirtual: z.number(handleZod.params('CodVirtual', 'array de número')).array(),
-                codCompany: handleZod.number('CodCompany'),
             });
             EventSchema.parse(newEvent);
 
-            const { codCompany, codVirtual } = newEvent;
-            const sql = `DELETE FROM VirtualLine 
-                        WHERE codVirtual in(${codVirtual.join(',')})
-                        AND codCompany = ${codCompany};`;
+            const { codVirtual } = newEvent;
+            const sql = `DELETE FROM VirtualLine WHERE codVirtual in(${codVirtual.join(',')});`;
             const result = await connectionToDatabase(sql);
     
             return result as any;
@@ -256,7 +219,7 @@ export const eventDB = {
 
 interface IParamsGetEvent {
     date: string,
-    codCompany: number,
+    codEmployee: number,
 };
 
 interface IParamsGetEventByClient {
@@ -265,8 +228,8 @@ interface IParamsGetEventByClient {
 };
 
 interface IParamsGetEventByMonth {
-    codMonth: number,
-    codCompany: number,
+    date: string,
+    codEmployee: number,
 };
 
 interface IParamsCreateEvent {
@@ -278,6 +241,7 @@ interface IParamsCreateEvent {
     startTime: string,
     endTime: string,
     codCompany: number,
+    codEmployee: number,
     typeVirtual?: 'normal' | 'lock',
     description?: string,
 };
@@ -291,7 +255,7 @@ interface IParamsUpdateEvent {
     endTime: string,
     codVirtual: string,
     codPayment: number,
-    codCompany: number,
+    codEmployee: number,
     description?: string,
 };
 
@@ -299,10 +263,9 @@ interface IParamsDeleteEvent {
     codClient: number,
     dateVirtual: string,
     startTime: string,
-    codCompany: number,
+    codEmployee: number,
 };
 
 interface IParamsDeleteInEvent {
     codVirtual: number[],
-    codCompany: number,
 };

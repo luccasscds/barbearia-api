@@ -10,6 +10,8 @@ import { handleZod } from "../../../tools/handleZod";
 import { handleError } from "../../../tools/handleError";
 import { toolsSQL } from "../../../tools/toolsSQL";
 import lodash from 'lodash';
+import { employeeDB } from "../../../db/employeeDB";
+import { transactionToDatabase } from "../../../db/createConnection";
 
 export const authController = {
     async clientSignIn(req: Request, res: Response) {
@@ -190,20 +192,19 @@ export const authController = {
             });
             UserSchema.parse(req.body);
 
-            const selectedCompany = await companyDB.getByEmail(email);
+            const selectedEmployee = await employeeDB.getByEmail({email});
 
-            if(!selectedCompany || !selectedCompany?.password) throw EmailOrPasswdMessageError;
-            if(selectedCompany.blocked) throw 'BLOCKED_CLIENT';
+            if(!selectedEmployee || !selectedEmployee?.password) throw EmailOrPasswdMessageError;
             
-            const decryptPassword = tools.decrypt(selectedCompany.password);
+            const decryptPassword = tools.decrypt(selectedEmployee.password);
             if(password !== decryptPassword) throw EmailOrPasswdMessageError;
             const newToken = await tools.token.generate();
             
             const company = {
-                codCompany: selectedCompany.codCompany,
-                name: selectedCompany.name,
-                blocked: selectedCompany.blocked,
-                emailCompany: selectedCompany.emailCompany,
+                codCompany: selectedEmployee.codCompany,
+                codEmployee: selectedEmployee.codEmployee,
+                name: selectedEmployee.nameEmployee,
+                email: selectedEmployee.emailEmployee,
 
                 expirationTimeInMinute: tools.expirationTimeInMinute,
                 dateCreated: moment().add(tools.expirationTimeInMinute, 'minute').format('YYYY-MM-DD HH:mm'),
@@ -217,7 +218,7 @@ export const authController = {
     },
     async companySignUp(req: Request, res: Response) {
         try {
-            const { password, emailCompany } = req.body;
+            const { password, emailCompany, name, numberWhatsApp } = req.body;
     
             const UserSchema = z.object({
                 name: handleZod.string('Nome', {min: 1}),
@@ -227,28 +228,80 @@ export const authController = {
             });
             UserSchema.parse(req.body);
             
-            const newPassword = tools.encrypt(password);
-            await companyDB.create({
-                ...req.body,
-                password: newPassword,
+            await transactionToDatabase(async (transaction) => {
+                const { lastInsertRowid: codCompany } = await transaction.execute({
+                    sql: `  INSERT INTO Company
+                                (nameCompany, numberWhatsApp)
+                            VALUES
+                                (?, ?);`,
+                    args: [name, numberWhatsApp],
+                });
+
+                await transaction.execute({
+                    sql: `  INSERT INTO Timetable (day, codCompany, active, time01, time02, time03, time04) VALUES
+                            ('Domingo',         ${codCompany}, false, '',           '',         '',         ''),
+                            ('Segunda-feira',   ${codCompany}, true, '08:00:00',    '12:00:00', '13:00:00', '18:00:00'),
+                            ('Terça-feira',     ${codCompany}, true, '08:00:00',    '12:00:00', '13:00:00', '18:00:00'),
+                            ('Quarta-feira',    ${codCompany}, true, '08:00:00',    '12:00:00', '13:00:00', '18:00:00'),
+                            ('Quinta-feira',    ${codCompany}, true, '08:00:00',    '12:00:00', '13:00:00', '18:00:00'),
+                            ('Sexta-feira',     ${codCompany}, true, '08:00:00',    '12:00:00', '13:00:00', '18:00:00'),
+                            ('Sábado',          ${codCompany}, false, '',            '',         '',         '');`,
+                    args: [],
+                });
+
+                await transaction.execute({
+                    sql: `  INSERT INTO ConfigSchedule (codCompany, keyConfig, valueConfig) values 
+                            (${codCompany}, 'timeIntervalMin', '15'),
+                            (${codCompany}, 'maxDay', '15'),
+                            (${codCompany}, 'cancelHoursBefore', '2'),
+                            (${codCompany}, 'textCancellationPolicy', 'Caso o cancelamento não seja feito 2h antes, será cobrado 50% do valor do serviço como multa por não comprimento com a as normas do estabelecimento'),
+                            (${codCompany}, 'allowCancellation', 'true'),
+                            (${codCompany}, 'textToClient', ''),
+                            (${codCompany}, 'pixRatePercentage', '50'),
+                            (${codCompany}, 'keyPix', ''),
+                            (${codCompany}, 'allowSchedulingHolidays', 'false');`,
+                    args: [],
+                });
+
+                const { lastInsertRowid: codEmployee } = await transaction.execute({
+                    sql: `  INSERT INTO Employee 
+                                (codCompany, nameEmployee, emailEmployee, password, isMaster, canSchedule, dateCreated)
+                            VALUES 
+                                (?, ?, ?, ?, ?, ?, datetime());`,
+                    args: [codCompany, name, emailCompany.toLowerCase(), tools.encrypt(password), true, true],
+                });
+
+                await transaction.execute({
+                    sql: `  INSERT INTO TimetableEmployee (day, codEmployee, active, time01, time02, time03, time04) VALUES
+                            ('Domingo',         ${codEmployee}, false, '',           '',         '',         ''),
+                            ('Segunda-feira',   ${codEmployee}, true, '08:00:00',    '12:00:00', '13:00:00', '18:00:00'),
+                            ('Terça-feira',     ${codEmployee}, true, '08:00:00',    '12:00:00', '13:00:00', '18:00:00'),
+                            ('Quarta-feira',    ${codEmployee}, true, '08:00:00',    '12:00:00', '13:00:00', '18:00:00'),
+                            ('Quinta-feira',    ${codEmployee}, true, '08:00:00',    '12:00:00', '13:00:00', '18:00:00'),
+                            ('Sexta-feira',     ${codEmployee}, true, '08:00:00',    '12:00:00', '13:00:00', '18:00:00'),
+                            ('Sábado',          ${codEmployee}, false, '',            '',         '',         '');`,
+                    args: [],
+                });
             });
 
-            const selectedCompany = await companyDB.getByEmail(emailCompany.toLowerCase());
-            if(!selectedCompany) throw 'Aconteceu algo de errado, o usuário não encontrado';
-            const newToken = await tools.token.generate();
+            const selectedEmployee = await employeeDB.getByEmail({email: emailCompany.toLowerCase()});
+            if(!selectedEmployee) throw 'Aconteceu algo de errado, o usuário não encontrado';
 
             const company = {
-                codCompany: selectedCompany.codCompany,
-                name: selectedCompany.name,
-                blocked: selectedCompany.blocked,
-                emailCompany: selectedCompany.emailCompany,
+                codCompany: selectedEmployee.codCompany,
+                codEmployee: selectedEmployee.codEmployee,
+                name: selectedEmployee.nameEmployee,
+                emailCompany: selectedEmployee.emailEmployee,
 
                 expirationTimeInMinute: tools.expirationTimeInMinute,
                 dateCreated: moment().add(tools.expirationTimeInMinute, 'minute').format('YYYY-MM-DD HH:mm'),
             }
             const encryptClient = await tools.encrypt(JSON.stringify(company));
             
-            res.json({ token: newToken, company: encryptClient });
+            res.json({
+                token: await tools.token.generate(),
+                company: encryptClient,
+            });
         } catch(error) {
             res.json({error: handleError(error)});
         };
@@ -272,7 +325,7 @@ export const authController = {
 
             const client: any = codCompany 
                 ? await clientDB.getByEmail({email, codCompany})
-                : await companyDB.getByEmail(email)
+                : await employeeDB.getByEmail({ email })
             ;
             if(!client) throw 'Não existe email cadastrado';
             
@@ -280,7 +333,7 @@ export const authController = {
                 accessToken: await Google.getAccessToken(),
                 client: {
                     email,
-                    name: client.name ?? client.nameClient,
+                    name: client.nameEmployee ?? client.nameClient,
                     codCompany,
                 },
             });
@@ -307,10 +360,11 @@ export const authController = {
             await tools.token.verify(data.token);
             
             if(!lodash.isNumber(data.client.codCompany)) {
-                const result: any = await companyDB.getByEmail(data.client.email);
-                await companyDB.update({
+                const result: any = await employeeDB.getByEmail({ email: data.client.email });
+                await employeeDB.update({ 
                     ...result,
-                    password: await tools.encrypt(password),
+                    canSchedule: !!result.canSchedule,
+                    password: password,
                 });
             } else {
                 const result = await clientDB.getByEmail({
@@ -320,7 +374,7 @@ export const authController = {
                 await clientDB.update({
                     ...result!,
                     blocked: !!result?.blocked,
-                    password: await tools.encrypt(password),
+                    password: password,
                 });
             }
 

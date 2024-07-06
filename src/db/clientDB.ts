@@ -3,6 +3,8 @@ import { connectionToDatabase } from './createConnection';
 import { handleZod } from '../tools/handleZod';
 import { ResultSet } from '@libsql/client/.';
 import { toolsSQL } from '../tools/toolsSQL';
+import { tools } from '../tools';
+import lodash from 'lodash';
 
 export const clientDB = {
     async getAll(codCompany: number): Promise<IResponseClient[]> {
@@ -50,13 +52,9 @@ export const clientDB = {
 
             const sql = `   select 
                                 c.codClient,c.nameClient, c.emailClient, c.numberPhone, c.blocked, c.dateCreated, c.birthdayDate, photo,
-                                (
-                                    select max(v.dateVirtual)
-                                    from VirtualLine v 
-                                    where v.codClient = c.codClient 
-                                    and v.codCompany = c.codCompany
-                                ) lastDayAttendance
+                                max(v.dateVirtual) lastDayAttendance
                             from Client c
+                            INNER JOIN VirtualLine v ON v.codClient = c.codClient
                             where c.codClient = ?;`
             const [result] = await connectionToDatabase(sql, [id] ) as any;
     
@@ -220,10 +218,10 @@ export const clientDB = {
             const sql = `UPDATE Client SET 
                             nameClient = ?,
                             emailClient = ?,
-                            ${password ? `passwordClient = '${password}',` : ''}
-                            ${numberPhone ? `numberPhone = '${numberPhone}',` : ''}
-                            ${birthdayDate ? `birthdayDate = '${birthdayDate}',` : ''}
-                            ${photo ? `photo = '${photo}',` : ''}
+                            ${lodash.isString(password) ? `passwordClient = '${tools.encrypt(password)}',` : ''}
+                            ${lodash.isString(numberPhone) ? `numberPhone = '${numberPhone}',` : ''}
+                            ${lodash.isString(birthdayDate) ? `birthdayDate = '${birthdayDate}',` : ''}
+                            ${lodash.isString(photo) ? `photo = '${photo}',` : ''}
                             blocked = ?
                         WHERE codClient = ?;`
             const result = await connectionToDatabase(sql, [nameClient, emailClient, blocked, codClient] );
@@ -239,12 +237,10 @@ export const clientDB = {
             const { codClient } = newClient;
             const UserSchema = z.object({
                 codClient: handleZod.number('codClient'),
-                // codCompany: handleZod.number('codCompany'),
             });
             UserSchema.parse(newClient);
 
-            const sql = `DELETE FROM Client
-                        WHERE codClient = ?;`
+            const sql = `DELETE FROM Client WHERE codClient = ?;`
             const result = await connectionToDatabase(sql, [codClient] );
 
             return result as any;
@@ -307,7 +303,6 @@ interface IParamsGetBlockedOrNo {
 
 interface IParamsDelete {
     codClient: number,
-    // codCompany: number,
 }
 
 interface IParamsMissing {

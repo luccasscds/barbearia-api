@@ -50,4 +50,40 @@ export const timetableController = {
             res.json({error: handleError(error)});
         }
     },
+    async getTimetableEmployee(req: Request, res: Response) {
+        try {
+            const response = await timetableDB.getTimetableEmployee(req.body);
+
+            res.json(response);
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
+    },
+    async getByDayTimetableEmployee(req: Request, res: Response) {
+        try {
+            const response = await timetableDB.getByDayTimetableEmployee(req.body);
+
+            res.json(response);
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
+    },
+    async createTimetableEmployee(req: Request, res: Response) {
+        try {
+            await timetableDB.createTimetableEmployee(req.body);
+
+           res.status(200).json({ message: `Registro(s) inserido(s)` });
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
+    },
+    async updateTimetableEmployee(req: Request, res: Response) {
+        try {
+            await timetableDB.updateTimetableEmployee(req.body);
+
+            res.status(200).json({ message: `Registro(s) atualizado(s)` });
+        } catch (error) {
+            res.json({error: handleError(error)});
+        }
+    },
 }
