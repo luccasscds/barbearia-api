@@ -1,4 +1,3 @@
-import { handleError } from '../tools/handleError';
 import { connectionToDatabase } from './createConnection';
 
 export const tagsDB = {

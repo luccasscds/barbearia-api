@@ -55,6 +55,7 @@ export const employeeDB = {
                             e.dateCreated,
                             e.isMaster,
                             e.canSchedule,
+                            e.isOutsourced,
                             CASE WHEN COALESCE((select 1 from Employee_Service es where es.codEmployee = e.codEmployee), e.isMaster)
                                 THEN true
                                 ELSE false
@@ -191,18 +192,19 @@ export const employeeDB = {
                     name: handleZod.string('Nome'),
                     checked: handleZod.boolean('Marcado'),
                 })),
+                isOutsourced: handleZod.boolean('Terceirizado').optional(),
             });
             EventSchema.parse(newEvent);
 
-            const { codCompany, nameEmployee, emailEmployee, password, photo, CPF, CNPJ, commissionInPercentage, permissionsInJSON } = newEvent;
+            const { codCompany, nameEmployee, emailEmployee, password, photo, CPF, CNPJ, commissionInPercentage, permissionsInJSON, isOutsourced } = newEvent;
             
             await transactionToDatabase(async (transaction) => {
                 const {lastInsertRowid} = await transaction.execute({
                     sql: `  INSERT INTO Employee 
-                                (codCompany, nameEmployee, emailEmployee, password, photo, CPF, CNPJ, commissionInPercentage, dateCreated)
+                                (codCompany, nameEmployee, emailEmployee, password, photo, CPF, CNPJ, commissionInPercentage, isOutsourced, dateCreated)
                             VALUES 
-                                (?, ?, ?, ?, ?, ?, ?, ?, datetime());`,
-                    args: [codCompany, nameEmployee, emailEmployee, tools.encrypt(password), (photo ?? null), (CPF ?? null), (CNPJ ?? null), (commissionInPercentage ?? null)]
+                                (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime());`,
+                    args: [codCompany, nameEmployee, emailEmployee, tools.encrypt(password), (photo ?? null), (CPF ?? null), (CNPJ ?? null), (commissionInPercentage ?? null), (isOutsourced ?? false)]
                 });
                 
                 await transaction.executeMultiple(permissionsInJSON.map((item: any) => (
@@ -388,6 +390,7 @@ interface IParamsCreate {
     CNPJ?: string,
     commissionInPercentage?: number,
     permissionsInJSON: any,
+    isOutsourced?: boolean,
 };
 
 interface IParamsUpdate {
@@ -467,6 +470,7 @@ interface IResponseGetByCompany {
     dateCreated: string,
     isMaster: boolean,
     canSchedule: boolean,
+    isOutsourced: boolean,
     hasServices: boolean,
     hasTimetable: boolean,
 };

@@ -2,15 +2,17 @@ import { z } from "zod";
 import { handleZod } from "../tools/handleZod";
 import { connectionToDatabase } from "./createConnection";
 import moment from "moment";
+import lodash from "lodash";
 
 export const financeDB = {
     async financialBalance(options: IParamsPerformance): Promise<any> {
         try {
-            const { dateStart, dateEnd, codCompany } = options;
+            const { dateStart, dateEnd, codCompany, codEmployee } = options;
             const newEventSchema = z.object({
                 dateStart: handleZod.date('Data início'),
                 dateEnd: handleZod.date('Data fim'),
                 codCompany: handleZod.number('CodCompany'),
+                codEmployee: handleZod.number('CodEmployee').nullable().optional(),
             });
             newEventSchema.parse(options);
 
@@ -19,9 +21,12 @@ export const financeDB = {
                                 s.price
                             FROM VirtualLine vl
                             INNER JOIN Service s ON s.codService = vl.codService
+                            INNER JOIN Employee e ON e.codEmployee = vl.codEmployee
                             WHERE vl.dateVirtual BETWEEN ? AND ?
                             AND vl.codCompany = ?
+                            ${lodash.isNumber(codEmployee) ? `AND vl.codEmployee = ${codEmployee}` : ''}
                             AND vl.typeVirtual = 'normal'
+                            AND e.isOutsourced = false
                         ), ExpenseTemp AS (
                             select 0 expense -- modificar depois qnd criar a tabela Expense
                         )
@@ -40,11 +45,12 @@ export const financeDB = {
 
     async financialResume(options: IParamsPerformance): Promise<any> {
         try {
-            const { dateStart, dateEnd, codCompany } = options;
+            const { dateStart, dateEnd, codCompany, codEmployee } = options;
             const newEventSchema = z.object({
                 dateStart: handleZod.date('Data início'),
                 dateEnd: handleZod.date('Data fim'),
                 codCompany: handleZod.number('CodCompany'),
+                codEmployee: handleZod.number('CodEmployee').nullable().optional(),
             });
             newEventSchema.parse(options);
 
@@ -56,9 +62,12 @@ export const financeDB = {
                                 vl.startTime,
                                 vl.endTime
                             FROM VirtualLine vl
+                            INNER JOIN Employee e ON e.codEmployee = vl.codEmployee
                             WHERE vl.dateVirtual BETWEEN ? AND ?
                             AND vl.codCompany = ?
+                            ${lodash.isNumber(codEmployee) ? `AND vl.codEmployee = ${codEmployee}` : ''}
                             AND vl.typeVirtual = 'normal'
+                            AND e.isOutsourced = false
                         )
                         SELECT
                             count(DISTINCT dateVirtual) countDay,
@@ -105,10 +114,12 @@ export const financeDB = {
                                 s.identificationColor
                             FROM VirtualLine vl
                             INNER JOIN Service s ON s.codService = vl.codService
+                            INNER JOIN Employee e ON e.codEmployee = vl.codEmployee
                             WHERE vl.dateVirtual BETWEEN ? AND ?
                             AND vl.codCompany = s.codCompany
                             AND vl.codCompany = ?
                             AND vl.typeVirtual = 'normal'
+                            AND e.isOutsourced = false
                         )
                         SELECT
                             v.nameService,
@@ -149,10 +160,12 @@ export const financeDB = {
                                 vl.codPayment
                             FROM VirtualLine vl
                             INNER JOIN Service s ON s.codService = vl.codService
+                            INNER JOIN Employee e ON e.codEmployee = vl.codEmployee
                             WHERE vl.dateVirtual BETWEEN ? AND ?
                             AND vl.codCompany = s.codCompany
                             AND vl.codCompany = ?
                             AND vl.typeVirtual = 'normal'
+                            AND e.isOutsourced = false
                         )
                         select
                             p.name,
@@ -200,10 +213,12 @@ export const financeDB = {
                     vl.codPayment
                 FROM VirtualLine vl
                 INNER JOIN Service s ON s.codService = vl.codService
+                INNER JOIN Employee e ON e.codEmployee = vl.codEmployee
                 WHERE vl.dateVirtual BETWEEN ? AND ?
                 AND vl.codCompany = s.codCompany
                 AND vl.codCompany = ?
                 AND vl.typeVirtual = 'normal'
+                AND e.isOutsourced = false
             ),
             expenseTemp as (
                 select 0 codExpense -- colocar depois a tabela Expense
@@ -243,10 +258,12 @@ export const financeDB = {
                         INNER JOIN Service s ON s.codService = vl.codService
                         INNER JOIN Client c ON c.codClient = vl.codClient
                         INNER JOIN PaymentMethod p ON p.codPay = vl.codPayment
+                        INNER JOIN Employee e ON e.codEmployee = vl.codEmployee
                         WHERE vl.dateVirtual = ?
                         AND vl.codCompany = s.codCompany
                         AND vl.codCompany = ?
-                        AND vl.typeVirtual = 'normal';`;
+                        AND vl.typeVirtual = 'normal'
+                        AND e.isOutsourced = false;`;
             const result = await connectionToDatabase(sql, [dateStart, codCompany] ) as any;
     
             return result;
@@ -282,10 +299,12 @@ export const financeDB = {
                     vl.codPayment
                 FROM VirtualLine vl
                 INNER JOIN Service s ON s.codService = vl.codService
+                INNER JOIN Employee e ON e.codEmployee = vl.codEmployee
                 WHERE vl.dateVirtual BETWEEN ? AND ?
                 AND vl.codCompany = s.codCompany
                 AND vl.codCompany = ?
                 AND vl.typeVirtual = 'normal'
+                AND e.isOutsourced = false
             )
             select
                 (
@@ -358,10 +377,12 @@ export const financeDB = {
                                 vl.codPayment
                             FROM VirtualLine vl
                             INNER JOIN Service s ON s.codService = vl.codService
+                            INNER JOIN Employee e ON e.codEmployee = vl.codEmployee
                             WHERE vl.dateVirtual BETWEEN ? AND ?
                             AND vl.codCompany = s.codCompany
                             AND vl.codCompany = ?
                             AND vl.typeVirtual = 'normal'
+                            AND e.isOutsourced = false
                         ),
                         calcBase as (
                             select
@@ -401,8 +422,11 @@ export const financeDB = {
                             FROM VirtualLine vl
                             INNER JOIN Client c ON c.codClient = vl.codClient
                             INNER JOIN Service s ON s.codService = vl.codService
+                            INNER JOIN Employee e ON e.codEmployee = vl.codEmployee
                             WHERE vl.dateVirtual BETWEEN ? AND ?
                             AND vl.codCompany = ?
+                            AND vl.typeVirtual = 'normal'
+                            AND e.isOutsourced = false
                         )
                         SELECT
                             vl.codClient,
@@ -457,6 +481,7 @@ interface IParamsPerformance {
     dateStart: string,
     dateEnd: string,
     codCompany: number,
+    codEmployee?: number,
 };
 
 interface IResponseTopFiveRevenuePerServices {

@@ -13,61 +13,50 @@ export const eventDB = {
             newEventSchema.parse(newEvent);
 
             const { codEmployee, date } = newEvent;
-            const sql = `select 
-                            distinct vl.dateVirtual, vl.startTime, vl.endTime, vl.codStatus, vl.typeVirtual, vl.description,
-                            (select name from Status where codStatus = vl.codStatus) status,
-                            (
-                                select GROUP_CONCAT(v.codVirtual) from VirtualLine v
-                                where v.codClient = vl.codClient
-                                and v.dateVirtual = vl.dateVirtual
-                                and v.startTime = vl.startTime
-                                and v.endTime = vl.endTime
-                            ) codVirtual,
-                            (select c.codClient from Client c where c.codClient = vl.codClient) codClient,
-                            (select c.nameClient from Client c where c.codClient = vl.codClient) nameClient,
-                            (select c.numberPhone from Client c where c.codClient = vl.codClient) numberPhone,
-                            (
-                                select GROUP_CONCAT(codService) from Service where codService in (
-                                    select v.codService
-                                    from VirtualLine v
-                                    where v.codClient = vl.codClient
-                                    and v.dateVirtual = vl.dateVirtual
-                                    and v.startTime = vl.startTime
-                                )
-                            ) codServices,
-                            (
-                                select GROUP_CONCAT(nameService) from Service where codService in (
-                                    select v.codService
-                                    from VirtualLine v
-                                    where v.codClient = vl.codClient
-                                    and v.dateVirtual = vl.dateVirtual
-                                    and v.startTime = vl.startTime
-                                )
-                            ) nameServices,
-                            (
-                                select sum(price) from Service where codService in (
-                                    select v.codService
-                                    from VirtualLine v
-                                    where v.codClient = vl.codClient
-                                    and v.dateVirtual = vl.dateVirtual
-                                    and v.startTime = vl.startTime
-                                )
-                            ) total,
-                            (
-                                select identificationColor from Service where codService = (
-                                    select MAX(v.codService)
-                                    from VirtualLine v
-                                    where v.codClient = vl.codClient
-                                    and v.dateVirtual = vl.dateVirtual
-                                    and v.startTime = vl.startTime
-                                )
-                            ) identificationColor,
+            const sql = `WITH VirtualLineTemp AS (
+                            select
+                                vl.codVirtual,
+                                vl.dateVirtual,
+                                vl.startTime,
+                                vl.endTime,
+                                vl.typeVirtual,
+                                vl.description,
+                                vl.codStatus,
+                                (select name from Status where codStatus = vl.codStatus) status,
+                                (select c.codClient from Client c where c.codClient = vl.codClient) codClient,
+                                (select c.nameClient from Client c where c.codClient = vl.codClient) nameClient,
+                                (select c.numberPhone from Client c where c.codClient = vl.codClient) numberPhone,
+                                vl.codService,
+                                (select nameService from Service where codService = vl.codService) nameService,
+                                (select price from Service where codService = vl.codService) price,
+                                (select identificationColor from Service where codService = vl.codService) identificationColor,
+                                vl.codPayment,
+                                (select name from PaymentMethod where codPay = vl.codPayment) desPayment,
+                                vl.codEmployee
+                            from VirtualLine vl
+                            where vl.dateVirtual = ?
+                            and vl.codEmployee = ?
+                        ) select
+                            vl.dateVirtual,
+                            vl.startTime,
+                            vl.endTime,
+                            vl.codStatus,
+                            vl.typeVirtual,
+                            vl.description,
+                            vl.status,
+                            GROUP_CONCAT(vl.codVirtual) codVirtual,
+                            vl.codClient,
+                            vl.nameClient,
+                            vl.numberPhone,
+                            GROUP_CONCAT(vl.codService) codServices,
+                            GROUP_CONCAT(vl.nameService) nameServices,
+                            SUM(vl.price) total,
+                            vl.identificationColor,
                             vl.codPayment,
-                            (select name from PaymentMethod where codPay = vl.codPayment) desPayment,
-                            codEmployee
-                        from VirtualLine vl
-                        where vl.dateVirtual = ?
-                        and codEmployee = ?;`;
+                            vl.desPayment,
+                            vl.codEmployee
+                        from VirtualLineTemp vl
+                        group by vl.dateVirtual, vl.startTime;`;
             const result = await connectionToDatabase(sql, [date, codEmployee] );
     
             return result;

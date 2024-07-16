@@ -82,13 +82,13 @@ export const timetableDB = {
             if(isExist && isExist > 0) return;
 
             const sql = `   INSERT INTO Timetable (day, codCompany, active, time01, time02, time03, time04) VALUES
+                            ('Domingo',         ${codCompany}, false, '',           '',         '',         ''),
                             ('Segunda-feira',   ${codCompany}, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
                             ('Terça-feira',     ${codCompany}, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
                             ('Quarta-feira',    ${codCompany}, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
                             ('Quinta-feira',    ${codCompany}, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
                             ('Sexta-feira',     ${codCompany}, true, '09:00:00',    '12:00:00', '15:00:00', '19:00:00'),
-                            ('Sábado',          ${codCompany}, true, '09:00:00',    '17:00:00', '',         ''),
-                            ('Domingo',         ${codCompany}, false, '',           '',         '',         '');`;
+                            ('Sábado',          ${codCompany}, true, '09:00:00',    '17:00:00', '',         '')`;
             const result = await connectionToDatabase(sql, undefined, true);
         
             return result as any;

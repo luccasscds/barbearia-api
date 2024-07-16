@@ -97,6 +97,7 @@ CREATE TABLE Employee (
     dateCreated                 DATETIME NOT NULL,
     isMaster                    BOOLEAN NOT NULL DEFAULT FALSE,
     canSchedule                 BOOLEAN NOT NULL DEFAULT FALSE,
+    isOutsourced                BOOLEAN NOT NULL DEFAULT FALSE, -- Terceirizado
     FOREIGN KEY (codCompany) REFERENCES Company (codCompany) ON DELETE CASCADE
 );
 
