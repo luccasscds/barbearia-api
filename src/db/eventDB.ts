@@ -56,7 +56,7 @@ export const eventDB = {
                             vl.desPayment,
                             vl.codEmployee
                         from VirtualLineTemp vl
-                        group by vl.dateVirtual, vl.startTime;`;
+                        group by vl.dateVirtual, vl.startTime, vl.endTime;`;
             const result = await connectionToDatabase(sql, [date, codEmployee] );
     
             return result;
